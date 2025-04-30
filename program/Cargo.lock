@@ -3313,6 +3313,7 @@ dependencies = [
 name = "solana-pinocchio-starter"
 version = "0.1.0"
 dependencies = [
+ "bincode",
  "mollusk-svm",
  "mollusk-svm-bencher",
  "pinocchio",
@@ -3320,6 +3321,8 @@ dependencies = [
  "pinocchio-pubkey",
  "pinocchio-system",
  "pinocchio-token",
+ "serde",
+ "serde_derive",
  "shank",
  "solana-sdk",
  "spl-token",

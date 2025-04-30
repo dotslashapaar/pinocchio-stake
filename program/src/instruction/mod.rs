@@ -1,9 +1,11 @@
 use pinocchio::program_error::ProgramError;
 
 pub mod initialize_mystate;
+pub mod set_lockup;
 pub mod update_mystate;
 
 pub use initialize_mystate::*;
+pub use set_lockup::*;
 pub use update_mystate::*;
 
 #[repr(u8)]

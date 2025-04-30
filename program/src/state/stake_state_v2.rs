@@ -1,5 +1,5 @@
 use pinocchio::{
-    account_info::{AccountInfo, Ref},
+    account_info::{AccountInfo, Ref, RefMut},
     program_error::ProgramError,
 };
 
@@ -56,6 +56,41 @@ impl StakeStateV2 {
         Ok(Self::from_bytes(data))
     }
 
+    #[inline]
+    pub fn try_from_account_info_mut(
+        account_info: &AccountInfo,
+    ) -> Result<RefMut<StakeStateV2>, ProgramError> {
+        if account_info.data_len() != Self::size_of() {
+            return Err(ProgramError::InvalidAccountData);
+        }
+
+        let data = account_info.try_borrow_mut_data()?;
+        if data[0] > 3 {
+            return Err(ProgramError::InvalidAccountData);
+        }
+
+        Ok(RefMut::map(data, |data| unsafe { Self::from_bytes_mut(data) }))
+    }
+
+    /// # Safety
+    ///
+    /// The caller must ensure that it is safe to borrow the account data – e.g., there are
+    /// no mutable borrows of the account data.
+    #[inline]
+    pub unsafe fn from_account_info_mut_unchecked(
+        account_info: &AccountInfo,
+    ) -> Result<&mut StakeStateV2, ProgramError> {
+        if account_info.data_len() != Self::size_of() {
+            return Err(ProgramError::InvalidAccountData);
+        }
+        let data = account_info.borrow_mut_data_unchecked();
+        if data[0] > 3 {
+            return Err(ProgramError::InvalidAccountData);
+        }
+
+        Ok(Self::from_bytes_mut(data))
+    }
+
     /// # Safety
     ///
     /// The caller must ensure that `bytes` contains a valid representation of `StakeStateV2`.
@@ -63,6 +98,16 @@ impl StakeStateV2 {
     pub unsafe fn from_bytes(bytes: &[u8]) -> &Self {
         &*(bytes.as_ptr() as *const Self)
     }
+
+    /// # Safety
+    ///
+    /// The caller must ensure that `bytes` contains a valid representation of `StakeStateV2`.
+    #[inline(always)]
+    pub unsafe fn from_bytes_mut(bytes: &mut [u8]) -> &mut Self {
+        &mut *(bytes.as_mut_ptr() as *mut Self)
+    }
+
+
 }
 
 #[cfg(test)]
