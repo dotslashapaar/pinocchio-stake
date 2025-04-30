@@ -89,7 +89,7 @@ fn process_instruction(
         StakeInstruction::Merge => {
             #[cfg(feature = "logging")]
             pinocchio::msg!("Instruction: Merge");
-
+            
             todo!()
         }
         StakeInstruction::AuthorizeWithSeed => {
