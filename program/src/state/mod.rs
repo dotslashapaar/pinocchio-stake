@@ -1,4 +1,6 @@
+
 pub mod authorized;
+pub mod authorized_checked_with_seed;
 pub mod delegation;
 pub mod lockup;
 pub mod meta;
@@ -13,6 +15,7 @@ pub use delegation::*;
 pub use lockup::*;
 pub use meta::*;
 pub use my_state::*;
+pub use authorized_checked_with_seed::*;
 use pinocchio::{
     account_info::{AccountInfo, Ref},
     program_error::ProgramError,
