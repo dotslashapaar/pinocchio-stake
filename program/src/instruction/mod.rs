@@ -1,9 +1,13 @@
 use pinocchio::program_error::ProgramError;
 
+pub mod authorize_with_seed;
 pub mod initialize_mystate;
+// pub mod move_lamports;
 pub mod update_mystate;
 
+pub use authorize_with_seed::*;
 pub use initialize_mystate::*;
+// pub use move_lamports::*;
 pub use update_mystate::*;
 
 #[repr(u8)]
