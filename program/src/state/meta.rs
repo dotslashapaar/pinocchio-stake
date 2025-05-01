@@ -12,6 +12,11 @@ pub struct Meta {
     pub lockup: Lockup,
 }
 
+pub struct SetLockupSignerArgs {
+    pub has_custodian_signer: bool,
+    pub has_withdrawer_signer: bool,
+}
+
 impl Meta {
     #[inline(always)]
     pub fn set_rent_exempt_reserve(&mut self, rent_exempt_reserve: u64) {
@@ -26,18 +31,17 @@ impl Meta {
     pub fn set_lockup(
         &mut self,
         lockup: &LockupArgs,
-        has_custodian_signer: bool,
-        has_withdrawer_signer: bool,
+        signer_args: SetLockupSignerArgs,
         clock: &Clock,
     ) -> Result<(), InstructionError> {
         // post-stake_program_v4 behavior:
         // * custodian can update the lockup while in force
         // * withdraw authority can set a new lockup
         if self.lockup.is_in_force(clock, None) {
-            if !has_custodian_signer {
+            if !signer_args.has_custodian_signer {
                 return Err(InstructionError::MissingRequiredSignature);
             }
-        } else if !has_withdrawer_signer {
+        } else if !signer_args.has_withdrawer_signer {
             return Err(InstructionError::MissingRequiredSignature);
         }
         if let Some(unix_timestamp) = lockup.unix_timestamp {

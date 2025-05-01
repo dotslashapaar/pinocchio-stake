@@ -8,7 +8,10 @@ use pinocchio::{
 
 use crate::{
     error::to_program_error,
-    state::{get_stake_state, try_get_stake_state_mut, Epoch, StakeStateV2, UnixTimestamp},
+    state::{
+        get_stake_state, try_get_stake_state_mut, Epoch, SetLockupSignerArgs, StakeStateV2,
+        UnixTimestamp,
+    },
 };
 
 #[cfg(not(test))]
@@ -132,10 +135,41 @@ pub fn process_set_lockup(accounts: &[AccountInfo], data: &[u8]) -> ProgramResul
         return Err(ProgramError::NotEnoughAccountKeys);
     };
 
+    let signer_args = get_set_lockup_signer_args(stake_account_info, accounts)?;
+
+    let clock = Clock::get()?;
+
+    do_set_lookup(stake_account_info, &lockup_args, signer_args, &clock)?;
+
+    Ok(())
+}
+
+fn do_set_lookup(
+    stake_account_info: &AccountInfo,
+    lockup: &LockupArgs,
+    signer_args: SetLockupSignerArgs,
+    clock: &Clock,
+) -> ProgramResult {
+    let mut stake_account: pinocchio::account_info::RefMut<'_, StakeStateV2> =
+        try_get_stake_state_mut(stake_account_info)?;
+    match *stake_account {
+        StakeStateV2::Initialized(ref mut meta) => meta
+            .set_lockup(lockup, signer_args, clock)
+            .map_err(to_program_error),
+        StakeStateV2::Stake(ref mut meta, _stake, _stake_flags) => meta
+            .set_lockup(lockup, signer_args, clock)
+            .map_err(to_program_error),
+        _ => Err(ProgramError::InvalidAccountData),
+    }
+}
+
+fn get_set_lockup_signer_args(
+    stake_account_info: &AccountInfo,
+    accounts: &[AccountInfo],
+) -> Result<SetLockupSignerArgs, ProgramError> {
     let stake_account: pinocchio::account_info::Ref<'_, StakeStateV2> =
         get_stake_state(stake_account_info)?;
 
-    // check signers
     let mut has_custodian_signer = false;
     let mut has_withdrawer_signer = false;
     match *stake_account {
@@ -155,38 +189,10 @@ pub fn process_set_lockup(accounts: &[AccountInfo], data: &[u8]) -> ProgramResul
             return Err(ProgramError::InvalidAccountData);
         }
     }
-
-    let clock = Clock::get()?;
-
-    do_set_lookup(
-        stake_account_info,
-        &lockup_args,
+    Ok(SetLockupSignerArgs {
         has_custodian_signer,
         has_withdrawer_signer,
-        &clock,
-    )?;
-
-    Ok(())
-}
-
-fn do_set_lookup(
-    stake_account_info: &AccountInfo,
-    lockup: &LockupArgs,
-    has_custodian_signer: bool,
-    has_withdrawer_signer: bool,
-    clock: &Clock,
-) -> ProgramResult {
-    let mut stake_account: pinocchio::account_info::RefMut<'_, StakeStateV2> =
-        try_get_stake_state_mut(stake_account_info)?;
-    match *stake_account {
-        StakeStateV2::Initialized(ref mut meta) => meta
-            .set_lockup(lockup, has_custodian_signer, has_withdrawer_signer, clock)
-            .map_err(to_program_error),
-        StakeStateV2::Stake(ref mut meta, _stake, _stake_flags) => meta
-            .set_lockup(lockup, has_custodian_signer, has_withdrawer_signer, clock)
-            .map_err(to_program_error),
-        _ => Err(ProgramError::InvalidAccountData),
-    }
+    })
 }
 
 #[cfg(test)]
