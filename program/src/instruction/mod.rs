@@ -1,4 +1,3 @@
-use pinocchio::prelude::*;
 use pinocchio::program_error::ProgramError;
 
 pub mod initialize_mystate;
