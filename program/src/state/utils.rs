@@ -2,17 +2,13 @@ use pinocchio::{
     account_info::{AccountInfo, Ref},
     program_error::ProgramError,
     pubkey::Pubkey,
-    sysvars::{
-        clock::{Clock, Epoch},
-        rent::Rent,
-        Sysvar,
-    },
+    sysvars::{clock, rent::Rent, Sysvar},
     ProgramResult, SUCCESS,
 };
 
 extern crate alloc;
 use super::{
-    get_stake_state, set_stake_state, Meta, StakeAuthorize, StakeStateV2,
+    get_stake_state, set_stake_state, Clock, Meta, StakeAuthorize, StakeStateV2,
     DEFAULT_WARMUP_COOLDOWN_RATE,
 };
 use crate::consts::{
@@ -344,20 +340,21 @@ pub fn do_authorize(
     new_authority: &Pubkey,
     authority_type: StakeAuthorize,
     custodian: Option<&Pubkey>,
-    clock: &Clock,
+    clock: Clock,
 ) -> ProgramResult {
-    match *get_stake_state(stake_account_info)? {
+    let stake_data = stake_account_info.try_borrow_mut_data()?;
+    match get_stake_state(&stake_data)? {
         StakeStateV2::Initialized(mut meta) => {
             meta.authorized
                 .authorize(
                     signers,
                     new_authority,
                     authority_type,
-                    Some((&meta.lockup, clock, custodian)),
+                    Some((&meta.lockup, &clock, custodian)),
                 )
                 .map_err(to_program_error)?;
 
-            set_stake_state(stake_account_info, &StakeStateV2::Initialized(meta))
+            set_stake_state(stake_data, StakeStateV2::Initialized(meta))
         }
         StakeStateV2::Stake(mut meta, stake, stake_flags) => {
             meta.authorized
@@ -365,21 +362,17 @@ pub fn do_authorize(
                     signers,
                     new_authority,
                     authority_type,
-                    Some((&meta.lockup, clock, custodian)),
+                    Some((&meta.lockup, &clock, custodian)),
                 )
                 .map_err(to_program_error)?;
 
-            set_stake_state(
-                stake_account_info,
-                &StakeStateV2::Stake(meta, stake, stake_flags),
-            )
+            set_stake_state(stake_data, StakeStateV2::Stake(meta, stake, stake_flags))
         }
         _ => Err(ProgramError::InvalidAccountData),
     }
 }
 
 //Clock doesn't have a from_account_info, so we implemt it, inspired from TokenAccount Pinocchio impl
-
 pub fn clock_from_account_info(account_info: &AccountInfo) -> Result<Ref<Clock>, ProgramError> {
     if account_info.data_len() != core::mem::size_of::<Clock>() {
         return Err(ProgramError::InvalidAccountData);

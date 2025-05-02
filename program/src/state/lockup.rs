@@ -1,6 +1,6 @@
-use pinocchio::{pubkey::Pubkey, sysvars::clock::Clock};
+use pinocchio::pubkey::Pubkey;
 
-use super::Epoch;
+use super::{Clock, Epoch};
 
 #[repr(C)]
 #[derive(Default, Debug, PartialEq, Eq, Clone, Copy)]
@@ -41,7 +41,7 @@ impl Lockup {
         if custodian == Some(&self.custodian) {
             return false;
         }
-        self.unix_timestamp > clock.unix_timestamp.to_le_bytes()
-            || self.epoch > clock.epoch.to_le_bytes()
+        i64::from_le_bytes(self.unix_timestamp) > i64::from_le_bytes(clock.unix_timestamp)
+            || u64::from_le_bytes(self.epoch) > u64::from_le_bytes(clock.epoch)
     }
 }

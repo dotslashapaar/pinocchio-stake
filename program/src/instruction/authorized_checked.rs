@@ -16,7 +16,7 @@ pub fn process_authorize_checked(
 
     // native asserts: 4 accounts (1 sysvar)
     let stake_account_info = next_account_info(account_info_iter)?;
-    let clock_info = next_account_info(account_info_iter)?;
+    let clock_info = next_account_info(account_info_iter)?; //Our own Struct
     let _old_stake_or_withdraw_authority_info = next_account_info(account_info_iter)?;
     let new_stake_or_withdraw_authority_info = next_account_info(account_info_iter)?;
 
@@ -40,7 +40,7 @@ pub fn process_authorize_checked(
         new_stake_or_withdraw_authority_info.key(),
         authority_type,
         custodian,
-        &clock,
+        clock,
     )?;
 
     Ok(())

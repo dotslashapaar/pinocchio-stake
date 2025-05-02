@@ -1,5 +1,3 @@
-use core::ops::Deref;
-
 use crate::{
     consts::PERPETUAL_NEW_WARMUP_COOLDOWN_RATE_EPOCH,
     error::StakeError,
@@ -16,7 +14,7 @@ use pinocchio::{
     ProgramResult,
 };
 
-use crate::state::utils::{collect_signers, next_account_info};
+use crate::state::utils::collect_signers;
 
 // almost all native stake program processors accumulate every account signer
 // they then defer all signer validation to functions on Meta or Authorized
@@ -25,22 +23,12 @@ use crate::state::utils::{collect_signers, next_account_info};
 // in the future, we may decide to tighten the interface and break badly formed transactions
 
 pub fn process_split(accounts: &[AccountInfo], split_lamports: u64) -> ProgramResult {
-    //--------- Updated this --------
-
-    //Instead of an HashSet we can use an array.
-    //Collect signers will return the array length and fill this signers array instead of returning the HashSet
     let mut signers_arr = [Pubkey::default(); 32];
     let _signers = collect_signers(accounts, &mut signers_arr)?;
-    let account_info_iter = &mut accounts.iter();
 
-    //----------- Finish Update ----------
-
-    // native asserts: 2 accounts
-    let source_stake_account_info = next_account_info(account_info_iter)?;
-    let destination_stake_account_info = next_account_info(account_info_iter)?;
-
-    // other accounts
-    // let _stake_authority_info = next_account_info(account_info_iter);
+    let [source_stake_account_info, destination_stake_account_info, _rest @ ..] = accounts else {
+        return Err(ProgramError::NotEnoughAccountKeys);
+    };
 
     let clock = Clock::get()?;
     let stake_history = &StakeHistorySysvar(clock.epoch);
@@ -50,7 +38,15 @@ pub fn process_split(accounts: &[AccountInfo], split_lamports: u64) -> ProgramRe
         return Err(ProgramError::InvalidAccountData);
     }
 
-    if let StakeStateV2::Uninitialized = get_stake_state(destination_stake_account_info)?.deref() {
+    //we want for these accounts to be owned by the stake program, right?
+    if !source_stake_account_info.is_owned_by(&crate::ID) {
+        return Err(ProgramError::InvalidAccountOwner);
+    }
+
+    let source_stake_state = source_stake_account_info.try_borrow_mut_data()?;
+    let destination_stake_state = destination_stake_account_info.try_borrow_mut_data()?;
+
+    if let StakeStateV2::Uninitialized = get_stake_state(&destination_stake_state)? {
         // we can split into this
     } else {
         return Err(ProgramError::InvalidAccountData);
@@ -63,7 +59,7 @@ pub fn process_split(accounts: &[AccountInfo], split_lamports: u64) -> ProgramRe
         return Err(ProgramError::InsufficientFunds);
     }
 
-    match get_stake_state(source_stake_account_info)?.deref() {
+    match get_stake_state(&source_stake_state)? {
         StakeStateV2::Stake(source_meta, mut source_stake, stake_flags) => {
             source_meta
                 .authorized
@@ -139,19 +135,23 @@ pub fn process_split(accounts: &[AccountInfo], split_lamports: u64) -> ProgramRe
             let destination_stake =
                 source_stake.split(remaining_stake_delta, split_stake_amount)?;
 
-            let mut destination_meta = *source_meta;
+            let mut destination_meta = source_meta;
             destination_meta.rent_exempt_reserve = validated_split_info
                 .destination_rent_exempt_reserve
                 .to_be_bytes();
 
-            set_stake_state(
-                source_stake_account_info,
-                &StakeStateV2::Stake(*source_meta, source_stake, *stake_flags),
-            )?;
+            if split_lamports == source_lamport_balance {
+                set_stake_state(source_stake_state, StakeStateV2::Uninitialized)?;
+            } else {
+                set_stake_state(
+                    source_stake_state,
+                    StakeStateV2::Stake(source_meta, source_stake, stake_flags),
+                )?;
+            }
 
             set_stake_state(
-                destination_stake_account_info,
-                &StakeStateV2::Stake(destination_meta, destination_stake, *stake_flags),
+                destination_stake_state,
+                StakeStateV2::Stake(destination_meta, destination_stake, stake_flags),
             )?;
         }
         StakeStateV2::Initialized(source_meta) => {
@@ -171,14 +171,18 @@ pub fn process_split(accounts: &[AccountInfo], split_lamports: u64) -> ProgramRe
                 false, // is_active
             )?;
 
-            let mut destination_meta = *source_meta;
+            let mut destination_meta = source_meta;
             destination_meta.rent_exempt_reserve = validated_split_info
                 .destination_rent_exempt_reserve
                 .to_le_bytes();
 
+            if split_lamports == source_lamport_balance {
+                set_stake_state(source_stake_state, StakeStateV2::Uninitialized)?;
+            }
+
             set_stake_state(
-                destination_stake_account_info,
-                &StakeStateV2::Initialized(destination_meta),
+                destination_stake_state,
+                StakeStateV2::Initialized(destination_meta),
             )?;
         }
         StakeStateV2::Uninitialized => {
@@ -187,11 +191,6 @@ pub fn process_split(accounts: &[AccountInfo], split_lamports: u64) -> ProgramRe
             }
         }
         _ => return Err(ProgramError::InvalidAccountData),
-    }
-
-    // Deinitialize state upon zero balance
-    if split_lamports == source_lamport_balance {
-        set_stake_state(source_stake_account_info, &StakeStateV2::Uninitialized)?;
     }
 
     relocate_lamports(

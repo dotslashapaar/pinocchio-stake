@@ -1,6 +1,6 @@
-use pinocchio::{program_error::ProgramError, pubkey::Pubkey, sysvars::clock::Clock};
+use pinocchio::{program_error::ProgramError, pubkey::Pubkey};
 
-use super::{Authorized, Epoch, Lockup};
+use super::{Authorized, Clock, Epoch, Lockup};
 
 pub type UnixTimestamp = [u8; 8];
 
