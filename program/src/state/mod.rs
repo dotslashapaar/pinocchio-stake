@@ -38,7 +38,11 @@ pub fn get_stake_state(data: &[u8]) -> Result<StakeStateV2, ProgramError> {
         return Err(ProgramError::InvalidAccountData);
     }
 
-    let tag = u32::from_le_bytes(data[0..4].try_into().unwrap());
+    let tag = u32::from_le_bytes(
+        data[0..4]
+            .try_into()
+            .map_err(|_| ProgramError::InvalidInstructionData)?,
+    );
 
     let data_ptr = &data[4] as *const u8;
 
