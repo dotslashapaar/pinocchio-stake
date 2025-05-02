@@ -1,14 +1,10 @@
 use pinocchio::program_error::ProgramError;
 
-pub mod authorize_with_seed;
-pub mod initialize_mystate;
-// pub mod move_lamports;
-pub mod update_mystate;
+pub mod authorized_checked;
+pub mod split;
 
-pub use authorize_with_seed::*;
-pub use initialize_mystate::*;
-// pub use move_lamports::*;
-pub use update_mystate::*;
+pub use authorized_checked::*;
+pub use split::*;
 
 #[repr(u8)]
 pub enum StakeInstruction {
