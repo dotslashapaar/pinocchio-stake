@@ -16,7 +16,7 @@ pub use delegation::*;
 pub use lockup::*;
 pub use meta::*;
 use pinocchio::{
-    account_info::{AccountInfo, Ref, RefMut},
+    account_info::{AccountInfo, RefMut},
     program_error::ProgramError,
     ProgramResult,
 };
@@ -63,21 +63,6 @@ pub fn get_stake_state(data: &[u8]) -> Result<StakeStateV2, ProgramError> {
     }
 }
 
-/// # Safety
-///
-/// The caller must ensure that it is safe to borrow the account data – e.g., there are
-/// no mutable borrows of the account data.
-/*
-pub unsafe fn get_stake_state_unchecked(
-    stake_account_info: &AccountInfo,
-) -> Result<&StakeStateV2, ProgramError> {
-    if stake_account_info.owner() != &crate::ID {
-        return Err(ProgramError::InvalidAccountOwner);
-    }
-
-    StakeStateV2::from_account_info_unchecked(stake_account_info)
-}
-*/
 pub fn set_stake_state(
     mut acc_stake_state_data: RefMut<[u8]>,
     new_state: StakeStateV2,

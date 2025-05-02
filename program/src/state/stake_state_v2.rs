@@ -5,13 +5,6 @@ use pinocchio::{
 
 use super::{Authorized, Delegation, Lockup, Meta, Stake, StakeFlags};
 
-#[repr(C)]
-#[derive(Clone, Copy, Debug)]
-pub struct StakeStateUnion {
-    pub tag: u32,
-    pub data: [u8; 196], // 200 - 4 for the tag
-}
-
 #[derive(PartialEq, Clone, Copy, Debug)]
 pub enum StakeStateV2 {
     Uninitialized,
