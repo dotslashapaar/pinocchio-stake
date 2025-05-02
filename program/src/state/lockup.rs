@@ -1,4 +1,4 @@
-use pinocchio::pubkey::Pubkey;
+use pinocchio::{pubkey::Pubkey, sysvars::clock::Clock};
 
 use super::Epoch;
 
@@ -7,10 +7,10 @@ use super::Epoch;
 pub struct Lockup {
     /// UnixTimestamp at which this stake will allow withdrawal, unless the
     ///   transaction is signed by the custodian
-    unix_timestamp: [u8; 8], //i64
+    pub unix_timestamp: [u8; 8], //i64
     /// epoch height at which this stake will allow withdrawal, unless the
     ///   transaction is signed by the custodian
-    epoch: Epoch,
+    pub epoch: Epoch,
     /// custodian signature on a transaction exempts the operation from
     ///  lockup constraints
     pub custodian: Pubkey,
@@ -35,5 +35,13 @@ impl Lockup {
     #[inline(always)]
     pub fn epoch(&self) -> u64 {
         u64::from_le_bytes(self.epoch)
+    }
+
+    pub fn is_in_force(&self, clock: &Clock, custodian: Option<&Pubkey>) -> bool {
+        if custodian == Some(&self.custodian) {
+            return false;
+        }
+        self.unix_timestamp > clock.unix_timestamp.to_le_bytes()
+            || self.epoch > clock.epoch.to_le_bytes()
     }
 }

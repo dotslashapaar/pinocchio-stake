@@ -4,9 +4,11 @@ pub mod authorized_checked_with_seed;
 pub mod delegation;
 pub mod lockup;
 pub mod meta;
-pub mod my_state;
 pub mod stake;
+pub mod stake_authorize;
 pub mod stake_flags;
+pub mod stake_history;
+pub mod stake_history_sysvar;
 pub mod stake_state_v2;
 pub mod utils;
 
@@ -14,7 +16,6 @@ pub use authorized::*;
 pub use delegation::*;
 pub use lockup::*;
 pub use meta::*;
-pub use my_state::*;
 pub use authorized_checked_with_seed::*;
 use pinocchio::{
     account_info::{AccountInfo, Ref},
@@ -22,7 +23,10 @@ use pinocchio::{
     ProgramResult,
 };
 pub use stake::*;
+pub use stake_authorize::*;
 pub use stake_flags::*;
+pub use stake_history::*;
+pub use stake_history_sysvar::*;
 pub use stake_state_v2::*;
 pub use utils::*;
 
@@ -57,4 +61,40 @@ pub fn set_stake_state(
     _new_state: &StakeStateV2,
 ) -> ProgramResult {
     todo!()
+
+    /*
+
+    //--------------- Code to swap ------------
+     let serialized_size =
+        bincode::serialized_size(new_state).map_err(|_| ProgramError::InvalidAccountData)?;
+    if serialized_size > stake_account_info.data_len() as u64 {
+        return Err(ProgramError::AccountDataTooSmall);
+    }
+
+    let mut data = stake_account_info.try_borrow_mut_data()?;
+    bincode::serialize_into(&mut data[..], new_state).map_err(|_| ProgramError::InvalidAccountData)
+     */
+}
+
+// dont call this "move" because we have an instruction MoveLamports
+pub fn relocate_lamports(
+    source_account_info: &AccountInfo,
+    destination_account_info: &AccountInfo,
+    lamports: u64,
+) -> ProgramResult {
+    {
+        let mut source_lamports = source_account_info.try_borrow_mut_lamports()?;
+        *source_lamports = source_lamports
+            .checked_sub(lamports)
+            .ok_or(ProgramError::InsufficientFunds)?;
+    }
+
+    {
+        let mut destination_lamports = destination_account_info.try_borrow_mut_lamports()?;
+        *destination_lamports = destination_lamports
+            .checked_add(lamports)
+            .ok_or(ProgramError::ArithmeticOverflow)?;
+    }
+
+    Ok(())
 }

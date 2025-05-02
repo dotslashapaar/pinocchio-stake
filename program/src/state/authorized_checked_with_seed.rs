@@ -3,13 +3,8 @@ extern crate alloc;
 
 use alloc::string::String;
 use pinocchio::pubkey::Pubkey;
+use crate::state::stake_authorize::StakeAuthorize;
 
-#[repr(C)]
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub enum StakeAuthorize {
-    Staker,
-    Withdrawer,
-}
 #[repr(C)]
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct AuthorizeCheckedWithSeedArgs {
