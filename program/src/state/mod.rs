@@ -2,6 +2,7 @@ pub mod authorized;
 pub mod delegation;
 pub mod lockup;
 pub mod meta;
+pub mod redelegate_state;
 pub mod stake;
 pub mod stake_authorize;
 pub mod stake_flags;
@@ -9,7 +10,6 @@ pub mod stake_history;
 pub mod stake_history_sysvar;
 pub mod stake_state_v2;
 pub mod utils;
-pub mod redelegate_state;
 
 pub use authorized::*;
 pub use delegation::*;
@@ -20,6 +20,7 @@ use pinocchio::{
     program_error::ProgramError,
     ProgramResult,
 };
+pub use redelegate_state::*;
 pub use stake::*;
 pub use stake_authorize::*;
 pub use stake_flags::*;
@@ -27,8 +28,6 @@ pub use stake_history::*;
 pub use stake_history_sysvar::*;
 pub use stake_state_v2::*;
 pub use utils::*;
-pub use redelegate_state::*;
-
 
 pub type Epoch = [u8; 8]; //u64
 pub type UnixTimestamp = [u8; 8]; //i64;
@@ -110,3 +109,20 @@ pub fn relocate_lamports(
     Ok(())
 }
 
+// TODO:relocate_lamports should be replaced with move_lamports
+
+// #[cfg(feature = "bincode")]
+// pub fn move_lamports<'a>(
+//     source_stake_pubkey: &'a Pubkey,
+//     destination_stake_pubkey: &'a Pubkey,
+//     authorized_pubkey: &'a Pubkey,
+//     lamports: u64,
+// ) -> Instruction<'a, 'a, 'a, 'a> {
+//     let account_metas = vec![
+//         AccountMeta::new(source_stake_pubkey, false, false),
+//         AccountMeta::new(destination_stake_pubkey, false, false),
+//         AccountMeta::readonly(authorized_pubkey),
+//     ];
+
+//     Instruction::new_with_bincode(ID, &StakeInstruction::MoveLamports(lamports), account_metas)
+// }
