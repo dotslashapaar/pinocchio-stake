@@ -5,6 +5,7 @@ use pinocchio::{
     sysvars::{clock::Clock, rent::Rent, Sysvar},
     ProgramResult, SUCCESS,
 };
+use pinocchio_pubkey::pubkey;
 
 extern crate alloc;
 use super::{
@@ -13,8 +14,7 @@ use super::{
 };
 use crate::{
     consts::{
-        FEATURE_STAKE_RAISE_MINIMUM_DELEGATION_TO_1_SOL, LAMPORTS_PER_SOL, MAX_SIGNERS,
-        NEW_WARMUP_COOLDOWN_RATE, SYSVAR,
+        FEATURE_STAKE_RAISE_MINIMUM_DELEGATION_TO_1_SOL, HASH_BYTES, LAMPORTS_PER_SOL, MAX_BASE58_LEN, MAX_SIGNERS, NEW_WARMUP_COOLDOWN_RATE, PERPETUAL_NEW_WARMUP_COOLDOWN_RATE_EPOCH, SYSVAR
     },
     helpers::MergeKind,
 };

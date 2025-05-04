@@ -1,10 +1,6 @@
 use pinocchio::program_error::ProgramError;
 
-pub mod initialize_mystate;
-pub mod update_mystate;
 pub mod delegate_stake;
-pub use initialize_mystate::*;
-pub use update_mystate::*;
 pub use delegate_stake::*;
 pub mod authorized_checked;
 pub mod move_lamports;
