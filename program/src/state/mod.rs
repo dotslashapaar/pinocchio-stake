@@ -9,13 +9,14 @@ pub mod stake_history;
 pub mod stake_history_sysvar;
 pub mod stake_state_v2;
 pub mod utils;
+pub mod redelegate_state;
 
 pub use authorized::*;
 pub use delegation::*;
 pub use lockup::*;
 pub use meta::*;
 use pinocchio::{
-    account_info::{AccountInfo, Ref},
+    account_info::{AccountInfo, Ref, RefMut},
     program_error::ProgramError,
     ProgramResult,
 };
@@ -26,8 +27,11 @@ pub use stake_history::*;
 pub use stake_history_sysvar::*;
 pub use stake_state_v2::*;
 pub use utils::*;
+pub use redelegate_state::*;
+
 
 pub type Epoch = [u8; 8]; //u64
+pub type UnixTimestamp = [u8; 8]; //i64;
 
 pub fn get_stake_state(
     stake_account_info: &AccountInfo,
@@ -51,6 +55,16 @@ pub unsafe fn get_stake_state_unchecked(
     }
 
     StakeStateV2::from_account_info_unchecked(stake_account_info)
+}
+
+pub fn try_get_stake_state_mut(
+    stake_account_info: &AccountInfo,
+) -> Result<RefMut<StakeStateV2>, ProgramError> {
+    if stake_account_info.is_owned_by(&crate::ID) {
+        return Err(ProgramError::InvalidAccountOwner);
+    }
+
+    StakeStateV2::try_from_account_info_mut(stake_account_info)
 }
 
 pub fn set_stake_state(
@@ -95,3 +109,4 @@ pub fn relocate_lamports(
 
     Ok(())
 }
+

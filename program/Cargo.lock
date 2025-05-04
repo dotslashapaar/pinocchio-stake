@@ -3322,6 +3322,7 @@ dependencies = [
  "pinocchio-system",
  "pinocchio-token",
  "serde",
+ "serde_derive",
  "shank",
  "solana-sdk",
  "spl-token",
