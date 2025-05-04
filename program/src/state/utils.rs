@@ -402,3 +402,41 @@ pub fn add_le_bytes(lhs: [u8; 8], rhs: [u8; 8]) -> [u8; 8] {
 pub fn bytes_to_u64(bytes: [u8; 8]) -> u64 {
     u64::from_le_bytes(bytes)
 }
+
+// MoveStake, MoveLamports, Withdraw, and AuthorizeWithSeed assemble signers explicitly
+pub fn collect_signers_checked<'a>(
+    authority_info: Option<&'a AccountInfo>,
+    custodian_info: Option<&'a AccountInfo>,
+) -> Result<([Pubkey; MAX_SIGNERS], Option<&'a Pubkey>, usize), ProgramError> {
+    let mut signers: [Pubkey; MAX_SIGNERS] = Default::default();
+    let mut signers_count = 0;
+
+    if let Some(authority_info) = authority_info {
+        add_signer(&mut signers, &mut signers_count, authority_info)?;
+    }
+
+    let custodian = if let Some(custodian_info) = custodian_info {
+        add_signer(&mut signers, &mut signers_count, custodian_info)?;
+        Some(custodian_info.key())
+    } else {
+        None
+    };
+
+    Ok((signers, custodian, signers_count))
+}
+
+pub fn add_signer(
+    signers: &mut [Pubkey; MAX_SIGNERS],
+    signers_count: &mut usize,
+    account_info: &AccountInfo,
+) -> Result<(), ProgramError> {
+    if *signers_count >= MAX_SIGNERS {
+        return Err(ProgramError::MaxAccountsDataAllocationsExceeded);
+    }
+    if !account_info.is_signer() {
+        return Err(ProgramError::MissingRequiredSignature);
+    }
+    signers[*signers_count] = *account_info.key();
+    *signers_count += 1;
+    Ok(())
+}
