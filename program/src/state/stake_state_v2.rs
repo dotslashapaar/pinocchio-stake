@@ -5,7 +5,7 @@ use pinocchio::{
 
 use super::{Authorized, Delegation, Lockup, Meta, Stake, StakeFlags};
 
-#[repr(u32)]
+#[repr(C)]
 #[derive(Debug, Default, PartialEq, Clone, Copy)]
 pub enum StakeStateV2 {
     #[default]
@@ -29,7 +29,7 @@ impl StakeStateV2 {
         }
 
         let data = account_info.try_borrow_data()?;
-        if data[0] > 3 {
+        if !Self::is_aligned_to_4(&*data) || data[0] > 3 {
             return Err(ProgramError::InvalidAccountData);
         }
 
@@ -48,7 +48,7 @@ impl StakeStateV2 {
             return Err(ProgramError::InvalidAccountData);
         }
         let data = account_info.borrow_data_unchecked();
-        if data[0] > 3 {
+        if !Self::is_aligned_to_4(data) || data[0] > 3 {
             return Err(ProgramError::InvalidAccountData);
         }
 
@@ -64,7 +64,7 @@ impl StakeStateV2 {
         }
 
         let data = account_info.try_borrow_mut_data()?;
-        if data[0] > 3 {
+        if !Self::is_aligned_to_4(&*data) || data[0] > 3 {
             return Err(ProgramError::InvalidAccountData);
         }
 
@@ -85,7 +85,7 @@ impl StakeStateV2 {
             return Err(ProgramError::InvalidAccountData);
         }
         let data = account_info.borrow_mut_data_unchecked();
-        if data[0] > 3 {
+        if !Self::is_aligned_to_4(data) || data[0] > 3 {
             return Err(ProgramError::InvalidAccountData);
         }
 
@@ -106,6 +106,11 @@ impl StakeStateV2 {
     #[inline(always)]
     pub unsafe fn from_bytes_mut(bytes: &mut [u8]) -> &mut Self {
         &mut *(bytes.as_mut_ptr() as *mut Self)
+    }
+
+    fn is_aligned_to_4(data: &[u8]) -> bool {
+        let ptr = data.as_ptr() as usize;
+        ptr % 4 == 0
     }
 
     pub fn stake(&self) -> Option<Stake> {
