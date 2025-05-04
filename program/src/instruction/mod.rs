@@ -1,12 +1,16 @@
 use pinocchio::program_error::ProgramError;
 
-pub mod delegate_stake;
-pub use delegate_stake::*;
+
 pub mod authorized_checked;
+pub mod set_lockup;
 pub mod split;
+pub mod redelegate;
 
 pub use authorized_checked::*;
+pub use set_lockup::*;
 pub use split::*;
+pub use redelegate::*;
+
 
 #[repr(u8)]
 pub enum StakeInstruction {

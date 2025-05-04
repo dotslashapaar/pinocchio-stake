@@ -84,7 +84,7 @@ fn process_instruction(
             #[cfg(feature = "logging")]
             pinocchio::msg!("Instruction: SetLockup");
 
-            todo!()
+            instruction::process_set_lockup(accounts, instruction_data)
         }
         StakeInstruction::Merge => {
             #[cfg(feature = "logging")]

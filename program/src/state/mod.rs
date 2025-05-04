@@ -11,6 +11,7 @@ pub mod stake_state_v2;
 pub mod vote_state_v3;
 pub mod authorized_voters;
 pub mod utils;
+pub mod redelegate_state;
 
 pub use authorized::*;
 pub use delegation::*;
@@ -18,7 +19,7 @@ pub use vote_state_v3::*;
 pub use authorized_voters::*;
 pub use lockup::*;
 pub use meta::*;
-use pinocchio::{ account_info::{ AccountInfo, Ref }, program_error::ProgramError, ProgramResult };
+use pinocchio::{ account_info::{ AccountInfo, Ref, RefMut }, program_error::ProgramError, ProgramResult };
 pub use stake::*;
 pub use stake_authorize::*;
 pub use stake_flags::*;
@@ -28,8 +29,11 @@ pub use stake_state_v2::*;
 pub use utils::*;
 
 use crate::consts::VOTE_PROGRAM_ID;
+pub use redelegate_state::*;
+
 
 pub type Epoch = [u8; 8]; //u64
+pub type UnixTimestamp = [u8; 8]; //i64;
 
 pub fn get_stake_state(
     stake_account_info: &AccountInfo
@@ -72,6 +76,36 @@ pub unsafe fn get_stake_state_unchecked(
     StakeStateV2::from_account_info_unchecked(stake_account_info)
 }
 
+pub fn try_get_stake_state_mut(
+    stake_account_info: &AccountInfo,
+) -> Result<RefMut<StakeStateV2>, ProgramError> {
+    if stake_account_info.is_owned_by(&crate::ID) {
+        return Err(ProgramError::InvalidAccountOwner);
+    }
+
+    StakeStateV2::try_from_account_info_mut(stake_account_info)
+}
+
+pub fn set_stake_state(
+    _stake_account_info: &AccountInfo,
+    _new_state: &StakeStateV2,
+) -> ProgramResult {
+    todo!()
+
+    /*
+
+    //--------------- Code to swap ------------
+     let serialized_size =
+        bincode::serialized_size(new_state).map_err(|_| ProgramError::InvalidAccountData)?;
+    if serialized_size > stake_account_info.data_len() as u64 {
+        return Err(ProgramError::AccountDataTooSmall);
+    }
+
+    let mut data = stake_account_info.try_borrow_mut_data()?;
+    bincode::serialize_into(&mut data[..], new_state).map_err(|_| ProgramError::InvalidAccountData)
+     */
+}
+
 // dont call this "move" because we have an instruction MoveLamports
 pub fn relocate_lamports(
     source_account_info: &AccountInfo,
@@ -93,13 +127,4 @@ pub fn relocate_lamports(
     }
 
     Ok(())
-}
-
-pub fn get_vote_state(vote_account_info: &AccountInfo) -> Result<Ref<VoteState>, ProgramError> {
-    if vote_account_info.is_owned_by(&VOTE_PROGRAM_ID) {
-        return Err(ProgramError::IncorrectProgramId);
-    }
-
-    let vote_state = VoteState::from_account_info(vote_account_info)?;
-    return Ok(vote_state);
 }
