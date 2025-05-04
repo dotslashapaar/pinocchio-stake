@@ -1,13 +1,13 @@
 use pinocchio::program_error::ProgramError;
 
-pub mod authorize_with_seed;
+// pub mod authorize_with_seed;
 pub mod authorized_checked;
 pub mod move_lamports;
 pub mod redelegate;
 pub mod set_lockup;
 pub mod split;
 
-pub use authorize_with_seed::*;
+// pub use authorize_with_seed::*;
 pub use authorized_checked::*;
 pub use move_lamports::*;
 pub use redelegate::*;
