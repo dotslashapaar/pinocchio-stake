@@ -3314,6 +3314,7 @@ name = "solana-pinocchio-starter"
 version = "0.1.0"
 dependencies = [
  "bincode",
+ "bs58",
  "mollusk-svm",
  "mollusk-svm-bencher",
  "pinocchio",
