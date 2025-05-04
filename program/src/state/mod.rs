@@ -11,10 +11,14 @@ pub mod stake_flags;
 pub mod stake_history;
 pub mod stake_history_sysvar;
 pub mod stake_state_v2;
+pub mod vote_state_v3;
+pub mod authorized_voters;
 pub mod utils;
 
 pub use authorized::*;
 pub use delegation::*;
+pub use vote_state_v3::*;
+pub use authorized_voters::*;
 pub use lockup::*;
 pub use merge::*;
 pub use meta::*;
@@ -34,11 +38,13 @@ pub use stake_history_sysvar::*;
 pub use stake_state_v2::*;
 pub use utils::*;
 
+use crate::consts::VOTE_PROGRAM_ID;
+
 pub type Epoch = [u8; 8]; //u64
 pub type UnixTimestamp = [u8; 8]; //i64;
 
 pub fn get_stake_state(
-    stake_account_info: &AccountInfo,
+    stake_account_info: &AccountInfo
 ) -> Result<Ref<StakeStateV2>, ProgramError> {
     if stake_account_info.is_owned_by(&crate::ID) {
         return Err(ProgramError::InvalidAccountOwner);
@@ -47,12 +53,29 @@ pub fn get_stake_state(
     StakeStateV2::from_account_info(stake_account_info)
 }
 
+pub fn set_stake_state(
+    stake_account_info: &AccountInfo,
+    new_state: &StakeStateV2
+) -> Result<(), ProgramError> {
+    let new_state_size = core::mem::size_of::<StakeStateV2>();
+    let data = stake_account_info.try_borrow_mut_data()?;
+    if data.len() < new_state_size {
+        return Err(ProgramError::AccountDataTooSmall);
+    }
+    let mut new_state_bytes = [0u8; core::mem::size_of::<StakeStateV2>()];
+    new_state_bytes.copy_from_slice(unsafe {
+        core::slice::from_raw_parts(new_state as *const StakeStateV2 as *const u8, new_state_size)
+    });
+    stake_account_info.try_borrow_mut_data()?.copy_from_slice(&new_state_bytes);
+    Ok(())
+}
+
 /// # Safety
 ///
 /// The caller must ensure that it is safe to borrow the account data – e.g., there are
 /// no mutable borrows of the account data.
 pub unsafe fn get_stake_state_unchecked(
-    stake_account_info: &AccountInfo,
+    stake_account_info: &AccountInfo
 ) -> Result<&StakeStateV2, ProgramError> {
     if stake_account_info.owner() != &crate::ID {
         return Err(ProgramError::InvalidAccountOwner);
@@ -75,7 +98,7 @@ pub fn try_get_stake_state_mut(
 pub fn relocate_lamports(
     source_account_info: &AccountInfo,
     destination_account_info: &AccountInfo,
-    lamports: u64,
+    lamports: u64
 ) -> ProgramResult {
     {
         let mut source_lamports = source_account_info.try_borrow_mut_lamports()?;

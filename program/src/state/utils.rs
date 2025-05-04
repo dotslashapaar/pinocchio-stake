@@ -1,10 +1,11 @@
 use pinocchio::{
-    account_info::{AccountInfo, Ref},
+    account_info::{ AccountInfo, Ref },
     program_error::ProgramError,
     pubkey::Pubkey,
     sysvars::{clock::Clock, rent::Rent, Sysvar},
     ProgramResult, SUCCESS,
 };
+use pinocchio_pubkey::pubkey;
 
 extern crate alloc;
 use super::{
@@ -19,7 +20,8 @@ use crate::{
     helpers::MergeKind,
 };
 use alloc::boxed::Box;
-use core::cell::UnsafeCell;
+use core::{ cell::UnsafeCell, fmt, mem, str::{ from_utf8, FromStr } };
+
 
 pub trait DataLen {
     const LEN: usize;
