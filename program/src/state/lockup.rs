@@ -7,7 +7,7 @@ use super::{Clock, Epoch};
 pub struct Lockup {
     /// UnixTimestamp at which this stake will allow withdrawal, unless the
     ///   transaction is signed by the custodian
-    pub unix_timestamp: [u8; 8], //i64
+    pub unix_timestamp: UnixTimestamp, //i64
     /// epoch height at which this stake will allow withdrawal, unless the
     ///   transaction is signed by the custodian
     pub epoch: Epoch,
@@ -41,6 +41,7 @@ impl Lockup {
         if custodian == Some(&self.custodian) {
             return false;
         }
+
         i64::from_le_bytes(self.unix_timestamp) > i64::from_le_bytes(clock.unix_timestamp)
             || u64::from_le_bytes(self.epoch) > u64::from_le_bytes(clock.epoch)
     }
