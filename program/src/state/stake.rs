@@ -8,6 +8,7 @@ pub struct Stake {
     pub delegation: Delegation,
     /// credits observed is credits from vote account state when delegated or redeemed
     pub credits_observed: [u8; 8], //u64
+    // changed to pub (as required in utils.rs L511 and L455)
 }
 
 impl Stake {

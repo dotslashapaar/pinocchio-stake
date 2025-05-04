@@ -22,7 +22,6 @@ use crate::{
 use alloc::boxed::Box;
 use core::{ cell::UnsafeCell, fmt, mem, str::{ from_utf8, FromStr } };
 
-
 pub trait DataLen {
     const LEN: usize;
 }
@@ -34,11 +33,7 @@ pub trait Initialized {
 #[inline(always)]
 pub unsafe fn load_acc<T: DataLen + Initialized>(bytes: &[u8]) -> Result<&T, ProgramError> {
     load_acc_unchecked::<T>(bytes).and_then(|acc| {
-        if acc.is_initialized() {
-            Ok(acc)
-        } else {
-            Err(ProgramError::UninitializedAccount)
-        }
+        if acc.is_initialized() { Ok(acc) } else { Err(ProgramError::UninitializedAccount) }
     })
 }
 
@@ -52,14 +47,10 @@ pub unsafe fn load_acc_unchecked<T: DataLen>(bytes: &[u8]) -> Result<&T, Program
 
 #[inline(always)]
 pub unsafe fn load_acc_mut<T: DataLen + Initialized>(
-    bytes: &mut [u8],
+    bytes: &mut [u8]
 ) -> Result<&mut T, ProgramError> {
     load_acc_mut_unchecked::<T>(bytes).and_then(|acc| {
-        if acc.is_initialized() {
-            Ok(acc)
-        } else {
-            Err(ProgramError::UninitializedAccount)
-        }
+        if acc.is_initialized() { Ok(acc) } else { Err(ProgramError::UninitializedAccount) }
     })
 }
 
@@ -91,7 +82,7 @@ pub unsafe fn to_mut_bytes<T: DataLen>(data: &mut T) -> &mut [u8] {
 
 pub fn collect_signers(
     accounts: &[AccountInfo],
-    signers_arr: &mut [Pubkey; MAX_SIGNERS],
+    signers_arr: &mut [Pubkey; MAX_SIGNERS]
 ) -> Result<usize, ProgramError> {
     let mut signer_len = 0;
 
@@ -109,7 +100,7 @@ pub fn collect_signers(
 }
 
 pub fn next_account_info<'a, I: Iterator<Item = &'a AccountInfo>>(
-    iter: &mut I,
+    iter: &mut I
 ) -> Result<&'a AccountInfo, ProgramError> {
     iter.next().ok_or(ProgramError::NotEnoughAccountKeys)
 }
@@ -130,12 +121,12 @@ macro_rules! impl_sysvar_id {
 }
 
 #[macro_export]
-macro_rules! declare_sysvar_id(
+macro_rules! declare_sysvar_id {
     ($name:expr, $type:ty) => (
         pinocchio_pubkey::declare_id!($name);
         $crate::impl_sysvar_id!($type);
-    )
-);
+    );
+}
 
 /// After calling `validate_split_amount()`, this struct contains calculated
 /// values that are used by the caller.
@@ -156,7 +147,7 @@ pub(crate) fn validate_split_amount(
     source_meta: &Meta,
     destination_data_len: usize,
     additional_required_lamports: u64,
-    source_is_active: bool,
+    source_is_active: bool
 ) -> Result<ValidatedSplitInfo, ProgramError> {
     // Split amount has to be something
     if split_lamports == 0 {
@@ -172,7 +163,8 @@ pub(crate) fn validate_split_amount(
     // splitting: EITHER at least the minimum balance, OR zero (in this case the
     // source account is transferring all lamports to new destination account,
     // and the source account will be closed)
-    let source_minimum_balance = u64::from_le_bytes(source_meta.rent_exempt_reserve)
+    let source_minimum_balance = u64
+        ::from_le_bytes(source_meta.rent_exempt_reserve)
         .saturating_add(additional_required_lamports);
     let source_remaining_balance = source_lamports.saturating_sub(split_lamports);
     if source_remaining_balance == 0 {
@@ -193,9 +185,10 @@ pub(crate) fn validate_split_amount(
     // 1. the destination account must be prefunded with at least the rent-exempt
     //    reserve, or
     // 2. the split must consume 100% of the source
-    if source_is_active
-        && source_remaining_balance != 0
-        && destination_lamports < destination_rent_exempt_reserve
+    if
+        source_is_active &&
+        source_remaining_balance != 0 &&
+        destination_lamports < destination_rent_exempt_reserve
     {
         return Err(ProgramError::InsufficientFunds);
     }
@@ -206,8 +199,9 @@ pub(crate) fn validate_split_amount(
     //    size changes
     // 2. The destination account being prefunded, which would lower the minimum
     //    split amount
-    let destination_minimum_balance =
-        destination_rent_exempt_reserve.saturating_add(additional_required_lamports);
+    let destination_minimum_balance = destination_rent_exempt_reserve.saturating_add(
+        additional_required_lamports
+    );
     let destination_balance_deficit =
         destination_minimum_balance.saturating_sub(destination_lamports);
     if split_lamports < destination_balance_deficit {
@@ -269,7 +263,7 @@ pub trait SyscallStubs: Sync + Send {
         _sysvar_id_addr: *const u8,
         _var_addr: *mut u8,
         _offset: u64,
-        _length: u64,
+        _length: u64
     ) -> u64 {
         UNSUPPORTED_SYSVAR
     }
@@ -284,11 +278,14 @@ pub(crate) fn sol_get_sysvar(
     sysvar_id_addr: *const u8,
     var_addr: *mut u8,
     offset: u64,
-    length: u64,
+    length: u64
 ) -> u64 {
-    SYSCALL_STUBS
-        .get_or_init(|| Box::new(DefaultSyscallStubs {}))
-        .sol_get_sysvar(sysvar_id_addr, var_addr, offset, length)
+    SYSCALL_STUBS.get_or_init(|| Box::new(DefaultSyscallStubs {})).sol_get_sysvar(
+        sysvar_id_addr,
+        var_addr,
+        offset,
+        length
+    )
 }
 
 //---------------- End of AI assistance ----------------------
@@ -299,11 +296,11 @@ pub fn get_sysvar(
     dst: &mut [u8],
     sysvar_id: &Pubkey,
     offset: u64,
-    length: u64,
+    length: u64
 ) -> Result<(), ProgramError> {
     // Check that the provided destination buffer is large enough to hold the
     // requested data.
-    if dst.len() < length as usize {
+    if dst.len() < (length as usize) {
         return Err(ProgramError::InvalidArgument);
     }
 
@@ -312,8 +309,9 @@ pub fn get_sysvar(
 
     //if on Solana call the actual syscall
     #[cfg(target_os = "solana")]
-    let result =
-        unsafe { pinocchio::syscalls::sol_get_sysvar(sysvar_id, var_addr, offset, length) };
+    let result = unsafe {
+        pinocchio::syscalls::sol_get_sysvar(sysvar_id, var_addr, offset, length)
+    };
 
     //if not on chain use the mock
     #[cfg(not(target_os = "solana"))]
@@ -384,12 +382,10 @@ pub fn do_authorize(
 
 pub fn warmup_cooldown_rate(
     current_epoch: [u8; 8],
-    new_rate_activation_epoch: Option<[u8; 8]>,
+    new_rate_activation_epoch: Option<[u8; 8]>
 ) -> f64 {
     let current = bytes_to_u64(current_epoch);
-    let activation = new_rate_activation_epoch
-        .map(bytes_to_u64)
-        .unwrap_or(u64::MAX);
+    let activation = new_rate_activation_epoch.map(bytes_to_u64).unwrap_or(u64::MAX);
 
     if current < activation {
         DEFAULT_WARMUP_COOLDOWN_RATE
@@ -399,9 +395,7 @@ pub fn warmup_cooldown_rate(
 }
 
 pub fn add_le_bytes(lhs: [u8; 8], rhs: [u8; 8]) -> [u8; 8] {
-    u64::from_le_bytes(lhs)
-        .saturating_add(u64::from_le_bytes(rhs))
-        .to_le_bytes()
+    u64::from_le_bytes(lhs).saturating_add(u64::from_le_bytes(rhs)).to_le_bytes()
 }
 
 pub fn bytes_to_u64(bytes: [u8; 8]) -> u64 {

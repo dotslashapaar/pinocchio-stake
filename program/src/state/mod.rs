@@ -23,12 +23,10 @@ pub use lockup::*;
 pub use merge::*;
 pub use meta::*;
 use pinocchio::{
-    account_info::{AccountInfo, Ref, RefMut},
+    account_info::{ AccountInfo, Ref, RefMut },
     program_error::ProgramError,
     ProgramResult,
 };
-
-pub use redelegate_state::*;
 pub use stake::*;
 pub use stake_authorize::*;
 pub use stake_clock::*;
@@ -39,6 +37,7 @@ pub use stake_state_v2::*;
 pub use utils::*;
 
 use crate::consts::VOTE_PROGRAM_ID;
+pub use redelegate_state::*;
 
 pub type Epoch = [u8; 8]; //u64
 pub type UnixTimestamp = [u8; 8]; //i64;
@@ -85,7 +84,7 @@ pub unsafe fn get_stake_state_unchecked(
 }
 
 pub fn try_get_stake_state_mut(
-    stake_account_info: &AccountInfo,
+    stake_account_info: &AccountInfo
 ) -> Result<RefMut<StakeStateV2>, ProgramError> {
     if stake_account_info.is_owned_by(&crate::ID) {
         return Err(ProgramError::InvalidAccountOwner);
@@ -117,11 +116,11 @@ pub fn relocate_lamports(
     Ok(())
 }
 
-pub fn checked_add(a: [u8; 8], b: [u8; 8]) -> Result<[u8; 8], ProgramError> {
-    let a_u64 = u64::from_le_bytes(a);
-    let b_u64 = u64::from_le_bytes(b);
-    a_u64.checked_add(b_u64)
-        .map(|result| result.to_le_bytes())
-        .ok_or(ProgramError::InsufficientFunds)
-}
+pub fn get_vote_state(vote_account_info: &AccountInfo) -> Result<Ref<VoteState>, ProgramError> {
+    if vote_account_info.is_owned_by(&VOTE_PROGRAM_ID) {
+        return Err(ProgramError::IncorrectProgramId);
+    }
 
+    let vote_state = VoteState::from_account_info(vote_account_info)?;
+    return Ok(vote_state);
+}
