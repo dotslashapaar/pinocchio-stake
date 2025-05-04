@@ -1,9 +1,11 @@
 use pinocchio::program_error::ProgramError;
 
 pub mod authorized_checked;
+pub mod set_lockup;
 pub mod split;
 
 pub use authorized_checked::*;
+pub use set_lockup::*;
 pub use split::*;
 
 #[repr(u8)]
