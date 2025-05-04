@@ -13,22 +13,6 @@ use crate::{
     },
 };
 
-// #[cfg(feature = "bincode")]
-// pub fn move_lamports<'a>(
-//     source_stake_pubkey: &'a Pubkey,
-//     destination_stake_pubkey: &'a Pubkey,
-//     authorized_pubkey: &'a Pubkey,
-//     lamports: u64,
-// ) -> Instruction<'a, 'a, 'a, 'a> {
-//     let account_metas = vec![
-//         AccountMeta::new(source_stake_pubkey, false, false),
-//         AccountMeta::new(destination_stake_pubkey, false, false),
-//         AccountMeta::readonly(authorized_pubkey),
-//     ];
-
-//     Instruction::new_with_bincode(ID, &StakeInstruction::MoveLamports(lamports), account_metas)
-// }
-
 fn move_stake_or_lamports_shared_checks(
     source_stake_account_info: &AccountInfo,
     lamports: u64,
