@@ -7,7 +7,7 @@ use super::{Authorized, Lockup};
 #[repr(C)]
 #[derive(Default, Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Meta {
-    rent_exempt_reserve: [u8; 8], // u64
+    pub rent_exempt_reserve: [u8; 8], // u64
     pub authorized: Authorized,
     pub lockup: Lockup,
 }

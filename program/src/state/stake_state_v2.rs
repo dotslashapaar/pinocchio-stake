@@ -3,7 +3,7 @@ use pinocchio::{
     program_error::ProgramError,
 };
 
-use super::{Meta, Stake, StakeFlags};
+use super::{Authorized, Delegation, Lockup, Meta, Stake, StakeFlags};
 
 #[repr(u32)]
 #[derive(Debug, Default, PartialEq, Clone, Copy)]
@@ -14,7 +14,6 @@ pub enum StakeStateV2 {
     Stake(Meta, Stake, StakeFlags),
     RewardsPool,
 }
-
 impl StakeStateV2 {
     /// The fixed number of bytes used to serialize each stake account
     pub const fn size_of() -> usize {
@@ -69,7 +68,9 @@ impl StakeStateV2 {
             return Err(ProgramError::InvalidAccountData);
         }
 
-        Ok(RefMut::map(data, |data| unsafe { Self::from_bytes_mut(data) }))
+        Ok(RefMut::map(data, |data| unsafe {
+            Self::from_bytes_mut(data)
+        }))
     }
 
     /// # Safety
@@ -107,7 +108,53 @@ impl StakeStateV2 {
         &mut *(bytes.as_mut_ptr() as *mut Self)
     }
 
+    pub fn stake(&self) -> Option<Stake> {
+        match self {
+            Self::Stake(_meta, stake, _stake_flags) => Some(*stake),
+            Self::Uninitialized | Self::Initialized(_) | Self::RewardsPool => None,
+        }
+    }
 
+    pub fn stake_ref(&self) -> Option<&Stake> {
+        match self {
+            Self::Stake(_meta, stake, _stake_flags) => Some(stake),
+            Self::Uninitialized | Self::Initialized(_) | Self::RewardsPool => None,
+        }
+    }
+
+    pub fn delegation(&self) -> Option<Delegation> {
+        match self {
+            Self::Stake(_meta, stake, _stake_flags) => Some(stake.delegation),
+            Self::Uninitialized | Self::Initialized(_) | Self::RewardsPool => None,
+        }
+    }
+
+    pub fn delegation_ref(&self) -> Option<&Delegation> {
+        match self {
+            StakeStateV2::Stake(_meta, stake, _stake_flags) => Some(&stake.delegation),
+            Self::Uninitialized | Self::Initialized(_) | Self::RewardsPool => None,
+        }
+    }
+
+    pub fn authorized(&self) -> Option<Authorized> {
+        match self {
+            Self::Stake(meta, _stake, _stake_flags) => Some(meta.authorized),
+            Self::Initialized(meta) => Some(meta.authorized),
+            Self::Uninitialized | Self::RewardsPool => None,
+        }
+    }
+
+    pub fn lockup(&self) -> Option<Lockup> {
+        self.meta().map(|meta| meta.lockup)
+    }
+
+    pub fn meta(&self) -> Option<Meta> {
+        match self {
+            Self::Stake(meta, _stake, _stake_flags) => Some(*meta),
+            Self::Initialized(meta) => Some(*meta),
+            Self::Uninitialized | Self::RewardsPool => None,
+        }
+    }
 }
 
 #[cfg(test)]

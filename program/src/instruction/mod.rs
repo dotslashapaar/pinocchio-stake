@@ -1,12 +1,12 @@
 use pinocchio::program_error::ProgramError;
 
-pub mod initialize_mystate;
+pub mod authorized_checked;
 pub mod set_lockup;
-pub mod update_mystate;
+pub mod split;
 
-pub use initialize_mystate::*;
+pub use authorized_checked::*;
 pub use set_lockup::*;
-pub use update_mystate::*;
+pub use split::*;
 
 #[repr(u8)]
 pub enum StakeInstruction {
