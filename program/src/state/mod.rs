@@ -9,6 +9,7 @@ pub mod stake_history;
 pub mod stake_history_sysvar;
 pub mod stake_state_v2;
 pub mod utils;
+pub mod redelegate_state;
 
 pub use authorized::*;
 pub use delegation::*;
@@ -26,6 +27,8 @@ pub use stake_history::*;
 pub use stake_history_sysvar::*;
 pub use stake_state_v2::*;
 pub use utils::*;
+pub use redelegate_state::*;
+
 
 pub type Epoch = [u8; 8]; //u64
 pub type UnixTimestamp = [u8; 8]; //i64;
@@ -106,3 +109,4 @@ pub fn relocate_lamports(
 
     Ok(())
 }
+
