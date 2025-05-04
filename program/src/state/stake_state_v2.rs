@@ -6,7 +6,7 @@ use pinocchio::{
 use super::{Authorized, Delegation, Lockup, Meta, Stake, StakeFlags};
 
 #[repr(C)]
-#[derive(Debug, Default, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum StakeStateV2 {
     Uninitialized,
     Initialized(Meta),

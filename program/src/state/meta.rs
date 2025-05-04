@@ -1,8 +1,6 @@
-use pinocchio::{program_error::ProgramError, pubkey::Pubkey};
+use crate::{error::InstructionError, instruction::LockupArgs};
 
 use super::{Authorized, Clock, Epoch, Lockup};
-
-use super::{Authorized, Lockup};
 
 #[repr(C)]
 #[derive(Default, Debug, PartialEq, Eq, Clone, Copy)]

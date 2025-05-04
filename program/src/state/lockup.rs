@@ -1,6 +1,6 @@
 use pinocchio::pubkey::Pubkey;
 
-use super::{Clock, Epoch};
+use super::{Clock, Epoch, UnixTimestamp};
 
 #[repr(C)]
 #[derive(Default, Debug, PartialEq, Eq, Clone, Copy)]

@@ -2,8 +2,9 @@ use crate::{
     consts::PERPETUAL_NEW_WARMUP_COOLDOWN_RATE_EPOCH,
     error::StakeError,
     state::{
-        bytes_to_u64, get_minimum_delegation, get_stake_state, relocate_lamports, set_stake_state,
-        to_program_error, validate_split_amount, StakeAuthorize, StakeHistorySysvar, StakeStateV2,
+        bytes_to_u64, get_minimum_delegation, get_stake_state, relocate_lamports, to_program_error,
+        try_get_stake_state_mut, validate_split_amount, StakeAuthorize, StakeHistorySysvar,
+        StakeStateV2,
     },
 };
 use pinocchio::{
@@ -43,10 +44,12 @@ pub fn process_split(accounts: &[AccountInfo], split_lamports: u64) -> ProgramRe
         return Err(ProgramError::InvalidAccountOwner);
     }
 
-    let source_stake_state = source_stake_account_info.try_borrow_mut_data()?;
-    let destination_stake_state = destination_stake_account_info.try_borrow_mut_data()?;
+    let mut source_stake_account: pinocchio::account_info::RefMut<'_, StakeStateV2> =
+        try_get_stake_state_mut(source_stake_account_info)?;
+    let mut dest_stake_account: pinocchio::account_info::RefMut<'_, StakeStateV2> =
+        try_get_stake_state_mut(destination_stake_account_info)?;
 
-    if let StakeStateV2::Uninitialized = get_stake_state(&destination_stake_state)? {
+    if let StakeStateV2::Uninitialized = *get_stake_state(destination_stake_account_info)? {
         // we can split into this
     } else {
         return Err(ProgramError::InvalidAccountData);
@@ -59,7 +62,7 @@ pub fn process_split(accounts: &[AccountInfo], split_lamports: u64) -> ProgramRe
         return Err(ProgramError::InsufficientFunds);
     }
 
-    match get_stake_state(&source_stake_state)? {
+    match *get_stake_state(source_stake_account_info)? {
         StakeStateV2::Stake(source_meta, mut source_stake, stake_flags) => {
             source_meta
                 .authorized
@@ -140,19 +143,10 @@ pub fn process_split(accounts: &[AccountInfo], split_lamports: u64) -> ProgramRe
                 .destination_rent_exempt_reserve
                 .to_be_bytes();
 
-            if split_lamports == source_lamport_balance {
-                set_stake_state(source_stake_state, StakeStateV2::Uninitialized)?;
-            } else {
-                set_stake_state(
-                    source_stake_state,
-                    StakeStateV2::Stake(source_meta, source_stake, stake_flags),
-                )?;
-            }
+            *source_stake_account = StakeStateV2::Stake(source_meta, source_stake, stake_flags);
 
-            set_stake_state(
-                destination_stake_state,
-                StakeStateV2::Stake(destination_meta, destination_stake, stake_flags),
-            )?;
+            *dest_stake_account =
+                StakeStateV2::Stake(destination_meta, destination_stake, stake_flags);
         }
         StakeStateV2::Initialized(source_meta) => {
             source_meta
@@ -176,14 +170,7 @@ pub fn process_split(accounts: &[AccountInfo], split_lamports: u64) -> ProgramRe
                 .destination_rent_exempt_reserve
                 .to_le_bytes();
 
-            if split_lamports == source_lamport_balance {
-                set_stake_state(source_stake_state, StakeStateV2::Uninitialized)?;
-            }
-
-            set_stake_state(
-                destination_stake_state,
-                StakeStateV2::Initialized(destination_meta),
-            )?;
+            *dest_stake_account = StakeStateV2::Initialized((destination_meta));
         }
         StakeStateV2::Uninitialized => {
             if !source_stake_account_info.is_signer() {
@@ -192,7 +179,9 @@ pub fn process_split(accounts: &[AccountInfo], split_lamports: u64) -> ProgramRe
         }
         _ => return Err(ProgramError::InvalidAccountData),
     }
-
+    if split_lamports == source_lamport_balance {
+        *source_stake_account = StakeStateV2::Uninitialized;
+    }
     relocate_lamports(
         source_stake_account_info,
         destination_stake_account_info,
