@@ -1,8 +1,6 @@
-use pinocchio::sysvars::clock::Clock;
-
 use crate::{error::InstructionError, instruction::LockupArgs};
 
-use super::{Authorized, Lockup};
+use super::{Authorized, Clock, Epoch, Lockup};
 
 #[repr(C)]
 #[derive(Default, Debug, PartialEq, Eq, Clone, Copy)]

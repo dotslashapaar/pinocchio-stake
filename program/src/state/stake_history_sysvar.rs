@@ -12,10 +12,7 @@
 //! [`SysvarId::id`]: https://docs.rs/solana-sysvar-id/latest/solana_sysvar_id/trait.SysvarId.html
 //! [`SysvarId::check_id`]: https://docs.rs/solana-sysvar-id/latest/solana_sysvar_id/trait.SysvarId.html#tymethod.check_id
 
-use pinocchio::{
-    pubkey::{self, Pubkey},
-    sysvars::clock::Epoch,
-};
+use pinocchio::sysvars::clock::Epoch;
 
 pub mod stake_history_id {
     pinocchio_pubkey::declare_id!("SysvarS1otHistory11111111111111111111111111");

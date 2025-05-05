@@ -1,5 +1,3 @@
-use core::fmt;
-
 use pinocchio::program_error::ProgramError;
 
 pub trait FromPrimitive {
@@ -19,10 +17,6 @@ pub trait ToPrimitive {
 }
 
 /// Reasons the Stake might have had an error.
-#[cfg_attr(
-    feature = "serde",
-    derive(serde_derive::Deserialize, serde_derive::Serialize)
-)]
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum StakeError {
     // 0
