@@ -32,7 +32,7 @@ fn process_instruction(
     // let (ix_disc, instruction_data) = instruction_data
     //     .split_at_checked(4)
     //     .ok_or(ProgramError::InvalidInstructionData)?;
-    
+
     let instruction = StakeInstruction::try_from(&ix_disc[0])?;
 
     // TODO: add check for epoch_rewards_active
@@ -148,7 +148,7 @@ fn process_instruction(
             #[cfg(feature = "logging")]
             pinocchio::msg!("Instruction: MoveLamports");
 
-            todo!()
+            instruction::process_move_lamports(accounts)
         }
     }
 }
