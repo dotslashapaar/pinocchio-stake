@@ -2,7 +2,7 @@ use pinocchio::{
     account_info::{AccountInfo, Ref},
     program_error::ProgramError,
     pubkey::Pubkey,
-    sysvars::{rent::Rent, Sysvar},
+    sysvars::{clock::Clock, rent::Rent, Sysvar},
     ProgramResult, SUCCESS,
 };
 
