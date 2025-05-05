@@ -1,6 +1,7 @@
 pub mod authorized;
 pub mod delegation;
 pub mod lockup;
+pub mod merge;
 pub mod meta;
 pub mod redelegate_state;
 pub mod stake;
@@ -15,6 +16,7 @@ pub mod utils;
 pub use authorized::*;
 pub use delegation::*;
 pub use lockup::*;
+pub use merge::*;
 pub use meta::*;
 use pinocchio::{
     account_info::{AccountInfo, Ref, RefMut},
@@ -91,3 +93,12 @@ pub fn relocate_lamports(
 
     Ok(())
 }
+
+pub fn checked_add(a: [u8; 8], b: [u8; 8]) -> Result<[u8; 8], ProgramError> {
+    let a_u64 = u64::from_le_bytes(a);
+    let b_u64 = u64::from_le_bytes(b);
+    a_u64.checked_add(b_u64)
+        .map(|result| result.to_le_bytes())
+        .ok_or(ProgramError::InsufficientFunds)
+}
+
