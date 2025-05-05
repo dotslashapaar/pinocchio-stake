@@ -122,3 +122,12 @@ pub fn get_vote_state(vote_account_info: &AccountInfo) -> Result<Ref<VoteState>,
     let vote_state = VoteState::from_account_info(vote_account_info)?;
     return Ok(vote_state);
 }
+
+pub fn checked_add(a: [u8; 8], b: [u8; 8]) -> Result<[u8; 8], ProgramError> {
+    let a_u64 = u64::from_le_bytes(a);
+    let b_u64 = u64::from_le_bytes(b);
+    a_u64.checked_add(b_u64)
+        .map(|result| result.to_le_bytes())
+        .ok_or(ProgramError::InsufficientFunds)
+}
+

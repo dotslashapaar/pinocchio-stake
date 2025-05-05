@@ -2,12 +2,18 @@ use pinocchio::{
     account_info::AccountInfo, 
     program_error::ProgramError, 
     pubkey::Pubkey, 
-    sysvars::{clock::Clock, Sysvar}, 
     ProgramResult,
 };
 use pinocchio_log::log;
 use crate::state::{
-    get_stake_state, relocate_lamports, set_stake_state, utils::next_account_info, MergeKind, StakeAuthorize, StakeHistorySysvar, StakeStateV2
+    get_stake_state, 
+    relocate_lamports, 
+    set_stake_state, 
+    clock_from_account_info,
+    MergeKind, 
+    StakeAuthorize, 
+    StakeHistorySysvar, 
+    StakeStateV2
 };
 
 use crate::state::collect_signers;
@@ -24,15 +30,24 @@ fn process_merge(
     let account_info_iter = &mut accounts.iter();
 
     // native asserts: 4 accounts (2 sysvars)
-    let destination_stake_account_info = next_account_info(account_info_iter)?;
-    let source_stake_account_info = next_account_info(account_info_iter)?;
-    let clock_info = next_account_info(account_info_iter)?;
-    let _stake_history_info = next_account_info(account_info_iter)?;
+    // let destination_stake_account_info = next_account_info(account_info_iter)?;
+    // let source_stake_account_info = next_account_info(account_info_iter)?;
+    // let clock_info = next_account_info(account_info_iter)?;
+    // let _stake_history_info = next_account_info(account_info_iter)?;
+
+    let [
+        destination_stake_account_info,
+        source_stake_account_info,
+        clock_info,
+        _stake_history_info,
+    ] = accounts else {
+        return Err(ProgramError::NotEnoughAccountKeys);
+    };
 
     // other accounts
     // let _stake_authority_info = next_account_info(account_info_iter)?;
 
-    let clock = Clock::get()?;
+    let clock = clock_from_account_info(clock_info)?;
     let stake_history = &StakeHistorySysvar(clock.epoch);
 
     // check source stake account and destination stake account are not having same key
