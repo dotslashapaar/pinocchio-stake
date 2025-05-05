@@ -2,18 +2,18 @@ use pinocchio::{
     account_info::{AccountInfo, Ref},
     program_error::ProgramError,
     pubkey::Pubkey,
-    sysvars::{rent::Rent, Sysvar},
+    sysvars::{clock::Clock, rent::Rent, Sysvar},
     ProgramResult, SUCCESS,
 };
 
 extern crate alloc;
 use super::{
-    get_stake_state, try_get_stake_state_mut, Clock, Meta, StakeAuthorize, StakeStateV2,
+    get_stake_state, try_get_stake_state_mut, Meta, StakeAuthorize, StakeStateV2,
     DEFAULT_WARMUP_COOLDOWN_RATE,
 };
 use crate::consts::{
-    FEATURE_STAKE_RAISE_MINIMUM_DELEGATION_TO_1_SOL, LAMPORTS_PER_SOL, MAX_SIGNERS,
-    NEW_WARMUP_COOLDOWN_RATE, SYSVAR,
+    CLOCK_ID, FEATURE_STAKE_RAISE_MINIMUM_DELEGATION_TO_1_SOL, LAMPORTS_PER_SOL, MAX_SIGNERS,
+    NEW_WARMUP_COOLDOWN_RATE,
 };
 use alloc::boxed::Box;
 use core::cell::UnsafeCell;
@@ -344,7 +344,7 @@ pub fn do_authorize(
 ) -> ProgramResult {
     let mut stake_account: pinocchio::account_info::RefMut<'_, StakeStateV2> =
         try_get_stake_state_mut(stake_account_info)?;
-    match *get_stake_state(stake_account_info)? {
+    match *stake_account {
         StakeStateV2::Initialized(mut meta) => {
             meta.authorized
                 .authorize(
@@ -401,4 +401,21 @@ pub fn add_le_bytes(lhs: [u8; 8], rhs: [u8; 8]) -> [u8; 8] {
 
 pub fn bytes_to_u64(bytes: [u8; 8]) -> u64 {
     u64::from_le_bytes(bytes)
+}
+
+//from_account_info helper for Clock while not implemente by Pinocchio
+pub fn clock_from_account_info(account_info: &AccountInfo) -> Result<Ref<Clock>, ProgramError> {
+    if account_info.data_len() != core::mem::size_of::<Clock>() {
+        return Err(ProgramError::InvalidAccountData);
+    }
+
+    if account_info.key() != &CLOCK_ID {
+        return Err(ProgramError::InvalidAccountData);
+    }
+
+    let data = account_info.try_borrow_data()?;
+
+    Ok(Ref::map(data, |data| unsafe {
+        &*(data.as_ptr() as *const Clock)
+    }))
 }

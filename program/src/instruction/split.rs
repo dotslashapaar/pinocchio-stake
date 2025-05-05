@@ -2,7 +2,7 @@ use crate::{
     consts::PERPETUAL_NEW_WARMUP_COOLDOWN_RATE_EPOCH,
     error::StakeError,
     state::{
-        bytes_to_u64, get_minimum_delegation, get_stake_state, relocate_lamports, to_program_error,
+        bytes_to_u64, get_minimum_delegation, relocate_lamports, to_program_error,
         try_get_stake_state_mut, validate_split_amount, StakeAuthorize, StakeHistorySysvar,
         StakeStateV2,
     },
@@ -39,22 +39,6 @@ pub fn process_split(accounts: &[AccountInfo], split_lamports: u64) -> ProgramRe
         return Err(ProgramError::InvalidAccountData);
     }
 
-    //we want for these accounts to be owned by the stake program, right?
-    if !source_stake_account_info.is_owned_by(&crate::ID) {
-        return Err(ProgramError::InvalidAccountOwner);
-    }
-
-    let mut source_stake_account: pinocchio::account_info::RefMut<'_, StakeStateV2> =
-        try_get_stake_state_mut(source_stake_account_info)?;
-    let mut dest_stake_account: pinocchio::account_info::RefMut<'_, StakeStateV2> =
-        try_get_stake_state_mut(destination_stake_account_info)?;
-
-    if let StakeStateV2::Uninitialized = *get_stake_state(destination_stake_account_info)? {
-        // we can split into this
-    } else {
-        return Err(ProgramError::InvalidAccountData);
-    }
-
     let source_lamport_balance = source_stake_account_info.lamports();
     let destination_lamport_balance = destination_stake_account_info.lamports();
 
@@ -62,7 +46,18 @@ pub fn process_split(accounts: &[AccountInfo], split_lamports: u64) -> ProgramRe
         return Err(ProgramError::InsufficientFunds);
     }
 
-    match *get_stake_state(source_stake_account_info)? {
+    let mut source_stake_account: pinocchio::account_info::RefMut<'_, StakeStateV2> =
+        try_get_stake_state_mut(source_stake_account_info)?;
+    let mut dest_stake_account: pinocchio::account_info::RefMut<'_, StakeStateV2> =
+        try_get_stake_state_mut(destination_stake_account_info)?;
+
+    if let StakeStateV2::Uninitialized = *dest_stake_account {
+        // we can split into this
+    } else {
+        return Err(ProgramError::InvalidAccountData);
+    }
+
+    match *source_stake_account {
         StakeStateV2::Stake(source_meta, mut source_stake, stake_flags) => {
             source_meta
                 .authorized
@@ -170,7 +165,7 @@ pub fn process_split(accounts: &[AccountInfo], split_lamports: u64) -> ProgramRe
                 .destination_rent_exempt_reserve
                 .to_le_bytes();
 
-            *dest_stake_account = StakeStateV2::Initialized((destination_meta));
+            *dest_stake_account = StakeStateV2::Initialized(destination_meta);
         }
         StakeStateV2::Uninitialized => {
             if !source_stake_account_info.is_signer() {
