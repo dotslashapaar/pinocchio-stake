@@ -1,88 +1,16 @@
-use pinocchio::{
-    account_info::AccountInfo,
-    program_error::ProgramError,
-    sysvars::{clock::Clock, Sysvar},
-    ProgramResult,
-};
+use pinocchio::{account_info::AccountInfo, program_error::ProgramError, ProgramResult};
 
 use crate::{
     helpers::MergeKind,
-    state::{
-        collect_signers_checked, get_stake_state, next_account_info, relocate_lamports,
-        to_program_error, StakeAuthorize, StakeHistorySysvar,
-    },
+    state::{move_stake_or_lamports_shared_checks, relocate_lamports},
 };
 
-fn move_stake_or_lamports_shared_checks(
-    source_stake_account_info: &AccountInfo,
-    lamports: u64,
-    destination_stake_account_info: &AccountInfo,
-    stake_authority_info: &AccountInfo,
-) -> Result<(MergeKind, MergeKind), ProgramError> {
-    // authority must sign
-    let (signers, _, _) = collect_signers_checked(Some(stake_authority_info), None)?;
-
-    // confirm not the same account
-    if *source_stake_account_info.key() == *destination_stake_account_info.key() {
-        return Err(ProgramError::InvalidInstructionData);
-    }
-
-    // source and destination must be writable
-    // runtime guards against unowned writes, but MoveStake and MoveLamports are defined by SIMD
-    // we check explicitly to avoid any possibility of a successful no-op that never attempts to write
-    if !source_stake_account_info.is_writable() || !destination_stake_account_info.is_writable() {
-        return Err(ProgramError::InvalidInstructionData);
-    }
-
-    // must move something
-    if lamports == 0 {
-        return Err(ProgramError::InvalidArgument);
-    }
-
-    let clock = Clock::get()?;
-    let stake_history = StakeHistorySysvar(clock.epoch);
-
-    // get_if_mergeable ensures accounts are not partly activated or in any form of deactivating
-    // we still need to exclude activating state ourselves
-    let source_merge_kind = MergeKind::get_if_mergeable(
-        &*get_stake_state(source_stake_account_info)?,
-        source_stake_account_info.lamports(),
-        &clock,
-        &stake_history,
-    )?;
-
-    // Authorized staker is allowed to move stake
-    source_merge_kind
-        .meta()
-        .authorized
-        .check(&signers, StakeAuthorize::Staker)
-        .map_err(to_program_error)?;
-
-    // same transient assurance as with source
-    let destination_merge_kind = MergeKind::get_if_mergeable(
-        &*get_stake_state(destination_stake_account_info)?,
-        destination_stake_account_info.lamports(),
-        &clock,
-        &stake_history,
-    )?;
-
-    // ensure all authorities match and lockups match if lockup is in force
-    MergeKind::metas_can_merge(
-        source_merge_kind.meta(),
-        destination_merge_kind.meta(),
-        &clock,
-    )?;
-
-    Ok((source_merge_kind, destination_merge_kind))
-}
-
-fn process_move_lamports(accounts: &[AccountInfo], lamports: u64) -> ProgramResult {
-    let account_info_iter = &mut accounts.iter();
-
-    // native asserts: 3 accounts
-    let source_stake_account_info = next_account_info(account_info_iter)?;
-    let destination_stake_account_info = next_account_info(account_info_iter)?;
-    let stake_authority_info = next_account_info(account_info_iter)?;
+pub fn process_move_lamports(accounts: &[AccountInfo], lamports: u64) -> ProgramResult {
+    let [source_stake_account_info, destination_stake_account_info, stake_authority_info, _remaining @ ..] =
+        accounts
+    else {
+        return Err(ProgramError::NotEnoughAccountKeys);
+    };
 
     let (source_merge_kind, _) = move_stake_or_lamports_shared_checks(
         source_stake_account_info,
