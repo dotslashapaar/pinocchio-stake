@@ -1,8 +1,8 @@
-use pinocchio::{program_error::ProgramError, pubkey::Pubkey};
+use pinocchio::{program_error::ProgramError, pubkey::Pubkey, sysvars::clock::Clock};
 
 use crate::error::StakeError;
 
-use super::{Clock, Lockup, StakeAuthorize};
+use super::{Lockup, StakeAuthorize};
 
 #[repr(C)]
 #[derive(Default, Debug, PartialEq, Eq, Clone, Copy)]

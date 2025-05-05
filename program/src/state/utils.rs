@@ -346,7 +346,7 @@ pub fn do_authorize(
 ) -> ProgramResult {
     let mut stake_account: pinocchio::account_info::RefMut<'_, StakeStateV2> =
         try_get_stake_state_mut(stake_account_info)?;
-    match *get_stake_state(stake_account_info)? {
+    match *stake_account {
         StakeStateV2::Initialized(mut meta) => {
             meta.authorized
                 .authorize(
