@@ -3,14 +3,9 @@ use {
     crate::{
         consts::PERPETUAL_NEW_WARMUP_COOLDOWN_RATE_EPOCH,
         error::StakeError,
-        state::{Delegation, Meta, Stake, StakeFlags, StakeHistoryGetEntry, StakeStateV2},
+        state::{Clock, Delegation, Meta, Stake, StakeFlags, StakeHistoryGetEntry, StakeStateV2},
     },
-    pinocchio::{
-        msg,
-        program_error::ProgramError,
-        sysvars::clock::{Clock, Epoch},
-        ProgramResult,
-    },
+    pinocchio::{msg, program_error::ProgramError, sysvars::clock::Epoch, ProgramResult},
 };
 
 #[derive(Clone, Debug, PartialEq)]
@@ -48,7 +43,7 @@ impl MergeKind {
                 // stake must not be in a transient state. Transient here meaning
                 // activating or deactivating with non-zero effective stake.
                 let status = stake.delegation.stake_activating_and_deactivating(
-                    clock.epoch.to_le_bytes(),
+                    clock.epoch,
                     stake_history,
                     PERPETUAL_NEW_WARMUP_COOLDOWN_RATE_EPOCH,
                 );
