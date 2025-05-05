@@ -1,21 +1,19 @@
 use pinocchio::{
-    account_info::AccountInfo,
-    program_error::ProgramError,
-    pubkey::Pubkey,
-    ProgramResult,
+    account_info::AccountInfo, program_error::ProgramError, pubkey::Pubkey, ProgramResult,
 };
 
 use pinocchio::instruction::{Seed, Signer};
 
-use pinocchio_token::{instructions::TransferChecked, state::{TokenAccount, Mint}};
+use pinocchio_token::{
+    instructions::TransferChecked,
+    state::{Mint, TokenAccount},
+};
 
 use crate::state::load_acc_mut_unchecked;
 
-use crate::{
-    state::{
-        utils::{load_ix_data, DataLen},
-        RedelegateState,
-    },
+use crate::state::{
+    utils::{load_ix_data, DataLen},
+    RedelegateState,
 };
 
 #[repr(C)]
@@ -61,7 +59,9 @@ pub fn process_start_redelegation(accounts: &[AccountInfo], data: &[u8]) -> Prog
 }
 
 pub fn process_complete_redelegation(accounts: &[AccountInfo], data: &[u8]) -> ProgramResult {
-    let [owner_acc, owner_ata, mint_to_stake, vault, state_acc, current_validator_acc, new_validator_acc] = accounts else {
+    let [owner_acc, owner_ata, mint_to_stake, vault, state_acc, current_validator_acc, new_validator_acc] =
+        accounts
+    else {
         return Err(ProgramError::NotEnoughAccountKeys);
     };
 
@@ -100,20 +100,20 @@ pub fn process_complete_redelegation(accounts: &[AccountInfo], data: &[u8]) -> P
 
     let ix_data = unsafe { load_ix_data::<StartRedelegationIxData>(data)? };
 
-    redelegate_state.complete_redelegation();
+    redelegate_state.complete_redelegation()?;
 
     let stake_amount = u64::from_le_bytes(ix_data.stake_amount);
     if stake_amount > vault_acc.amount() {
-        (TransferChecked{
+        (TransferChecked {
             from: owner_ata,
             to: vault,
             mint: mint_to_stake,
             authority: owner_acc,
             amount: stake_amount - vault_acc.amount(),
             decimals: mint_state.decimals(),
-        }).invoke()
-    }
-    else {
+        })
+        .invoke()
+    } else {
         let bump = &[ix_data.bump];
         let seeds = &[
             Seed::from(RedelegateState::SEED.as_bytes()),
@@ -123,14 +123,14 @@ pub fn process_complete_redelegation(accounts: &[AccountInfo], data: &[u8]) -> P
         ];
         let signer = Signer::from(seeds);
 
-        (TransferChecked{
+        (TransferChecked {
             from: vault,
             to: owner_ata,
             mint: mint_to_stake,
             authority: state_acc,
             amount: vault_acc.amount() - stake_amount,
             decimals: mint_state.decimals(),
-        }).invoke_signed(&[signer])
+        })
+        .invoke_signed(&[signer])
     }
-
 }

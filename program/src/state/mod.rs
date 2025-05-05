@@ -5,6 +5,7 @@ pub mod meta;
 pub mod redelegate_state;
 pub mod stake;
 pub mod stake_authorize;
+pub mod stake_clock;
 pub mod stake_flags;
 pub mod stake_history;
 pub mod stake_history_sysvar;
@@ -20,9 +21,11 @@ use pinocchio::{
     program_error::ProgramError,
     ProgramResult,
 };
+
 pub use redelegate_state::*;
 pub use stake::*;
 pub use stake_authorize::*;
+pub use stake_clock::*;
 pub use stake_flags::*;
 pub use stake_history::*;
 pub use stake_history_sysvar::*;
@@ -64,26 +67,6 @@ pub fn try_get_stake_state_mut(
     }
 
     StakeStateV2::try_from_account_info_mut(stake_account_info)
-}
-
-pub fn set_stake_state(
-    _stake_account_info: &AccountInfo,
-    _new_state: &StakeStateV2,
-) -> ProgramResult {
-    todo!()
-
-    /*
-
-    //--------------- Code to swap ------------
-     let serialized_size =
-        bincode::serialized_size(new_state).map_err(|_| ProgramError::InvalidAccountData)?;
-    if serialized_size > stake_account_info.data_len() as u64 {
-        return Err(ProgramError::AccountDataTooSmall);
-    }
-
-    let mut data = stake_account_info.try_borrow_mut_data()?;
-    bincode::serialize_into(&mut data[..], new_state).map_err(|_| ProgramError::InvalidAccountData)
-     */
 }
 
 // dont call this "move" because we have an instruction MoveLamports
