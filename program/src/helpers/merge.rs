@@ -53,13 +53,16 @@ impl MergeKind {
                     PERPETUAL_NEW_WARMUP_COOLDOWN_RATE_EPOCH,
                 );
 
-                match (status.effective, status.activating, status.deactivating) {
+                let effective = u64::from_le_bytes(status.effective);
+                let activating = u64::from_le_bytes(status.activating);
+                let deactivating = u64::from_le_bytes(status.deactivating);
+
+                match (effective, activating, deactivating) {
                     (0, 0, 0) => Ok(Self::Inactive(*meta, stake_lamports, *stake_flags)),
                     (0, _, _) => Ok(Self::ActivationEpoch(*meta, *stake, *stake_flags)),
                     (_, 0, 0) => Ok(Self::FullyActive(*meta, *stake)),
                     _ => {
                         let err = StakeError::MergeTransientStake;
-                        msg!("{}", err);
                         Err(err.into())
                     }
                 }
