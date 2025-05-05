@@ -8,12 +8,15 @@ use pinocchio::{
 
 extern crate alloc;
 use super::{
-    get_stake_state, try_get_stake_state_mut, Clock, Meta, StakeAuthorize, StakeStateV2,
+    get_stake_state, set_stake_state, Meta, StakeAuthorize, StakeHistorySysvar, StakeStateV2,
     DEFAULT_WARMUP_COOLDOWN_RATE,
 };
-use crate::consts::{
-    FEATURE_STAKE_RAISE_MINIMUM_DELEGATION_TO_1_SOL, LAMPORTS_PER_SOL, MAX_SIGNERS,
-    NEW_WARMUP_COOLDOWN_RATE, SYSVAR,
+use crate::{
+    consts::{
+        FEATURE_STAKE_RAISE_MINIMUM_DELEGATION_TO_1_SOL, LAMPORTS_PER_SOL, MAX_SIGNERS,
+        NEW_WARMUP_COOLDOWN_RATE, SYSVAR,
+    },
+    helpers::MergeKind,
 };
 use alloc::boxed::Box;
 use core::cell::UnsafeCell;
@@ -439,4 +442,67 @@ pub fn add_signer(
     signers[*signers_count] = *account_info.key();
     *signers_count += 1;
     Ok(())
+}
+
+pub fn move_stake_or_lamports_shared_checks(
+    source_stake_account_info: &AccountInfo,
+    lamports: u64,
+    destination_stake_account_info: &AccountInfo,
+    stake_authority_info: &AccountInfo,
+) -> Result<(MergeKind, MergeKind), ProgramError> {
+    // authority must sign
+    let (signers, _, _) = collect_signers_checked(Some(stake_authority_info), None)?;
+
+    // confirm not the same account
+    if *source_stake_account_info.key() == *destination_stake_account_info.key() {
+        return Err(ProgramError::InvalidInstructionData);
+    }
+
+    // source and destination must be writable
+    // runtime guards against unowned writes, but MoveStake and MoveLamports are defined by SIMD
+    // we check explicitly to avoid any possibility of a successful no-op that never attempts to write
+    if !source_stake_account_info.is_writable() || !destination_stake_account_info.is_writable() {
+        return Err(ProgramError::InvalidInstructionData);
+    }
+
+    // must move something
+    if lamports == 0 {
+        return Err(ProgramError::InvalidArgument);
+    }
+
+    let clock = Clock::get()?;
+    let stake_history = StakeHistorySysvar(clock.epoch);
+
+    // get_if_mergeable ensures accounts are not partly activated or in any form of deactivating
+    // we still need to exclude activating state ourselves
+    let source_merge_kind = MergeKind::get_if_mergeable(
+        &*get_stake_state(source_stake_account_info)?,
+        source_stake_account_info.lamports(),
+        &clock,
+        &stake_history,
+    )?;
+
+    // Authorized staker is allowed to move stake
+    source_merge_kind
+        .meta()
+        .authorized
+        .check(&signers, StakeAuthorize::Staker)
+        .map_err(to_program_error)?;
+
+    // same transient assurance as with source
+    let destination_merge_kind = MergeKind::get_if_mergeable(
+        &*get_stake_state(destination_stake_account_info)?,
+        destination_stake_account_info.lamports(),
+        &clock,
+        &stake_history,
+    )?;
+
+    // ensure all authorities match and lockups match if lockup is in force
+    MergeKind::metas_can_merge(
+        source_merge_kind.meta(),
+        destination_merge_kind.meta(),
+        &clock,
+    )?;
+
+    Ok((source_merge_kind, destination_merge_kind))
 }
