@@ -5,7 +5,7 @@ use crate::{
     state::{move_stake_or_lamports_shared_checks, relocate_lamports},
 };
 
-pub fn process_move_lamports(accounts: &[AccountInfo], lamports: u64) -> ProgramResult {
+pub fn process_move_lamports(accounts: &[AccountInfo]) -> ProgramResult {
     let [source_stake_account_info, destination_stake_account_info, stake_authority_info, _remaining @ ..] =
         accounts
     else {
@@ -14,7 +14,6 @@ pub fn process_move_lamports(accounts: &[AccountInfo], lamports: u64) -> Program
 
     let (source_merge_kind, _) = move_stake_or_lamports_shared_checks(
         source_stake_account_info,
-        lamports,
         destination_stake_account_info,
         stake_authority_info,
     )?;
@@ -30,14 +29,10 @@ pub fn process_move_lamports(accounts: &[AccountInfo], lamports: u64) -> Program
         _ => return Err(ProgramError::InvalidAccountData),
     };
 
-    if lamports > source_free_lamports {
-        return Err(ProgramError::InvalidArgument);
-    }
-
     relocate_lamports(
         source_stake_account_info,
         destination_stake_account_info,
-        lamports,
+        source_free_lamports,
     )?;
 
     Ok(())
