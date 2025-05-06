@@ -2,9 +2,7 @@ use pinocchio::{
     account_info::AccountInfo, program_error::ProgramError, pubkey::Pubkey, ProgramResult,
 };
 
-use crate::state::{
-    clock_from_account_info, collect_signers, do_authorize, next_account_info, StakeAuthorize,
-};
+use crate::state::{clock_from_account_info, collect_signers, do_authorize, StakeAuthorize};
 
 pub fn process_authorize_checked(
     accounts: &[AccountInfo],
@@ -12,16 +10,19 @@ pub fn process_authorize_checked(
 ) -> ProgramResult {
     let mut signers = [Pubkey::default(); 32];
     let _signers_len = collect_signers(accounts, &mut signers)?;
-    let account_info_iter = &mut accounts.iter();
 
-    // native asserts: 4 accounts (1 sysvar)
-    let stake_account_info = next_account_info(account_info_iter)?;
-    let clock_info = next_account_info(account_info_iter)?; //Our own Struct
-    let _old_stake_or_withdraw_authority_info = next_account_info(account_info_iter)?;
-    let new_stake_or_withdraw_authority_info = next_account_info(account_info_iter)?;
+    let [stake_account_info, clock_info, _old_stake_or_withdraw_authority_info, new_stake_or_withdraw_authority_info, rest @ ..] =
+        accounts
+    else {
+        return Err(ProgramError::NotEnoughAccountKeys);
+    };
 
     // other accounts
-    let option_lockup_authority_info = next_account_info(account_info_iter).ok();
+    let option_lockup_authority_info = if !rest.is_empty() {
+        Some(&rest[0])
+    } else {
+        None
+    };
 
     let clock = *clock_from_account_info(clock_info)?;
 
