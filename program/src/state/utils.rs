@@ -2,13 +2,10 @@ use pinocchio::{
     account_info::{ AccountInfo, Ref },
     program_error::ProgramError,
     pubkey::Pubkey,
-    sysvars::{ clock::{ Clock, Epoch }, rent::Rent, Sysvar },
+    sysvars::{ rent::Rent, Sysvar },
     ProgramResult,
     SUCCESS,
-    sysvars::{rent::Rent, Sysvar},
-    ProgramResult, SUCCESS,
 };
-use pinocchio_pubkey::pubkey;
 
 extern crate alloc;
 use super::{
@@ -429,13 +426,13 @@ pub(crate) fn new_stake(
     stake: [u8; 8],
     voter_pubkey: &Pubkey,
     vote_state: &VoteState,
-    activation_epoch: Epoch
+    activation_epoch: [u8; 8]
 ) -> Stake {
     Stake {
         delegation: Delegation::new(
             voter_pubkey,
             bytes_to_u64(stake),
-            activation_epoch.to_be_bytes()
+            activation_epoch
         ),
         credits_observed: vote_state.credits().to_le_bytes(),
     }
@@ -463,12 +460,12 @@ pub(crate) fn redelegate_stake(
     stake_lamports: [u8; 8],
     voter_pubkey: &Pubkey,
     vote_state: &VoteState,
-    epoch: Epoch,
+    epoch: [u8;8],
     stake_history: &StakeHistorySysvar
 ) -> Result<(), ProgramError> {
     // If stake is currently active:
     if
-        stake.stake(epoch.to_be_bytes(), stake_history, PERPETUAL_NEW_WARMUP_COOLDOWN_RATE_EPOCH) !=
+        stake.stake(epoch, stake_history, PERPETUAL_NEW_WARMUP_COOLDOWN_RATE_EPOCH) !=
         0
     {
         // If pubkey of new voter is the same as current,
@@ -476,7 +473,7 @@ pub(crate) fn redelegate_stake(
         // we rescind deactivation
         if
             stake.delegation.voter_pubkey == *voter_pubkey &&
-            epoch.to_be_bytes() == stake.delegation.deactivation_epoch
+            epoch == stake.delegation.deactivation_epoch
         {
             stake.delegation.deactivation_epoch = u64::MAX.to_le_bytes();
             return Ok(());
@@ -490,7 +487,7 @@ pub(crate) fn redelegate_stake(
     // Redelegation implies either re-activation or un-deactivation
 
     stake.delegation.stake = stake_lamports;
-    stake.delegation.activation_epoch = epoch.to_be_bytes();
+    stake.delegation.activation_epoch = epoch;
     stake.delegation.deactivation_epoch = u64::MAX.to_le_bytes();
     stake.delegation.voter_pubkey = *voter_pubkey;
     stake.credits_observed = vote_state.credits().to_be_bytes();
