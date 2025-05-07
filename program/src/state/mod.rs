@@ -2,8 +2,10 @@ pub mod authorized;
 pub mod delegation;
 pub mod lockup;
 pub mod meta;
+pub mod redelegate_state;
 pub mod stake;
 pub mod stake_authorize;
+pub mod stake_clock;
 pub mod stake_flags;
 pub mod stake_history;
 pub mod stake_history_sysvar;
@@ -11,7 +13,6 @@ pub mod stake_state_v2;
 pub mod vote_state_v3;
 pub mod authorized_voters;
 pub mod utils;
-pub mod redelegate_state;
 
 pub use authorized::*;
 pub use delegation::*;
@@ -24,8 +25,11 @@ use pinocchio::{
     program_error::ProgramError,
     ProgramResult,
 };
+
+pub use redelegate_state::*;
 pub use stake::*;
 pub use stake_authorize::*;
+pub use stake_clock::*;
 pub use stake_flags::*;
 pub use stake_history::*;
 pub use stake_history_sysvar::*;

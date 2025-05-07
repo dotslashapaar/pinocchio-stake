@@ -6,15 +6,15 @@ use pinocchio::{
 use super::{Authorized, Delegation, Lockup, Meta, Stake, StakeFlags};
 
 #[repr(C)]
-#[derive(Debug, Default, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum StakeStateV2 {
-    #[default]
     Uninitialized,
     Initialized(Meta),
     Stake(Meta, Stake, StakeFlags),
     RewardsPool,
 }
-impl StakeStateV2 {
+
+impl<'a> StakeStateV2 {
     /// The fixed number of bytes used to serialize each stake account
     pub const fn size_of() -> usize {
         200
@@ -91,7 +91,6 @@ impl StakeStateV2 {
 
         Ok(Self::from_bytes_mut(data))
     }
-
     /// # Safety
     ///
     /// The caller must ensure that `bytes` contains a valid representation of `StakeStateV2`.
@@ -161,7 +160,6 @@ impl StakeStateV2 {
         }
     }
 }
-
 #[cfg(test)]
 mod test {
     use super::StakeStateV2;

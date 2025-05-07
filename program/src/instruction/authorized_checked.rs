@@ -2,9 +2,7 @@ use pinocchio::{
     account_info::AccountInfo, program_error::ProgramError, pubkey::Pubkey, ProgramResult,
 };
 
-use crate::state::{
-    clock_from_account_info, collect_signers, do_authorize, next_account_info, StakeAuthorize,
-};
+use crate::state::{collect_signers, do_authorize, next_account_info, Clock, StakeAuthorize};
 
 pub fn process_authorize_checked(
     accounts: &[AccountInfo],
@@ -16,14 +14,14 @@ pub fn process_authorize_checked(
 
     // native asserts: 4 accounts (1 sysvar)
     let stake_account_info = next_account_info(account_info_iter)?;
-    let clock_info = next_account_info(account_info_iter)?;
+    let clock_info = next_account_info(account_info_iter)?; //Our own Struct
     let _old_stake_or_withdraw_authority_info = next_account_info(account_info_iter)?;
     let new_stake_or_withdraw_authority_info = next_account_info(account_info_iter)?;
 
     // other accounts
     let option_lockup_authority_info = next_account_info(account_info_iter).ok();
 
-    let clock = *clock_from_account_info(clock_info)?;
+    let clock = *Clock::from_account_info(clock_info)?;
 
     if !new_stake_or_withdraw_authority_info.is_signer() {
         return Err(ProgramError::MissingRequiredSignature);
@@ -40,7 +38,7 @@ pub fn process_authorize_checked(
         new_stake_or_withdraw_authority_info.key(),
         authority_type,
         custodian,
-        &clock,
+        clock,
     )?;
 
     Ok(())

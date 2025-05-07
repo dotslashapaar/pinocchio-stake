@@ -9,8 +9,8 @@ use pinocchio::{
 use crate::{
     error::to_program_error,
     state::{
-        get_stake_state, try_get_stake_state_mut, Epoch, SetLockupSignerArgs, StakeStateV2,
-        UnixTimestamp,
+        get_stake_state, stake_clock, try_get_stake_state_mut, Epoch, SetLockupSignerArgs,
+        StakeStateV2, UnixTimestamp,
     },
 };
 
@@ -138,8 +138,15 @@ pub fn process_set_lockup(accounts: &[AccountInfo], data: &[u8]) -> ProgramResul
     let signer_args = get_set_lockup_signer_args(stake_account_info, accounts)?;
 
     let clock = Clock::get()?;
+    let state_clock = stake_clock::Clock {
+        slot: clock.slot.to_le_bytes(),
+        epoch_start_timestamp: clock.epoch_start_timestamp.to_le_bytes(),
+        epoch: clock.epoch.to_le_bytes(),
+        leader_schedule_epoch: clock.leader_schedule_epoch.to_le_bytes(),
+        unix_timestamp: clock.unix_timestamp.to_le_bytes(),
+    };
 
-    do_set_lookup(stake_account_info, &lockup_args, signer_args, &clock)?;
+    do_set_lookup(stake_account_info, &lockup_args, signer_args, &state_clock)?;
 
     Ok(())
 }
@@ -148,7 +155,7 @@ fn do_set_lookup(
     stake_account_info: &AccountInfo,
     lockup: &LockupArgs,
     signer_args: SetLockupSignerArgs,
-    clock: &Clock,
+    clock: &stake_clock::Clock,
 ) -> ProgramResult {
     let mut stake_account: pinocchio::account_info::RefMut<'_, StakeStateV2> =
         try_get_stake_state_mut(stake_account_info)?;
