@@ -5,7 +5,6 @@ use pinocchio::{
     sysvars::{clock::Clock, rent::Rent, Sysvar},
     ProgramResult, SUCCESS,
 };
-use pinocchio_pubkey::pubkey;
 
 extern crate alloc;
 use super::{

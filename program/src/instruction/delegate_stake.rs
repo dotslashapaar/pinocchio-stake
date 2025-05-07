@@ -5,7 +5,7 @@ use pinocchio::{
     ProgramResult,
 };
 use crate::state::{
-    clock_from_account_info,
+    bytes_to_u64,
     collect_signers,
     get_stake_state,
     get_vote_state,
@@ -15,6 +15,7 @@ use crate::state::{
     set_stake_state,
     to_program_error,
     validate_delegated_amount,
+    Clock,
     StakeFlags,
     StakeHistorySysvar,
     StakeStateV2,
@@ -37,8 +38,8 @@ pub fn process_delegate(accounts: &[AccountInfo], _data: &[u8]) -> ProgramResult
     // other account info
     // let _stake_authority_info = next_account_info(accounts_info_iter)?;
 
-    let clock = clock_from_account_info(clock_info)?;
-    let stake_history = &StakeHistorySysvar(clock.epoch);
+    let clock = Clock::from_account_info(clock_info)?;
+    let stake_history = &StakeHistorySysvar(bytes_to_u64(clock.epoch));
     let vote_state = get_vote_state(vote_account_info)?;
 
     match *get_stake_state(stake_account_info)? {
@@ -50,7 +51,12 @@ pub fn process_delegate(accounts: &[AccountInfo], _data: &[u8]) -> ProgramResult
                 stake_account_info,
                 &meta
             )?;
-            let stake = new_stake(stake_amount, vote_account_info.key(), &vote_state, clock.epoch);
+            let stake = new_stake(
+                stake_amount,
+                vote_account_info.key(),
+                &vote_state,
+                clock.epoch
+            );
             set_stake_state(
                 stake_account_info,
                 &StakeStateV2::Stake(meta, stake, StakeFlags::empty())
