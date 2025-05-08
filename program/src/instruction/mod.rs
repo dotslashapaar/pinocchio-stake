@@ -6,6 +6,8 @@ pub mod move_lamports;
 pub mod redelegate;
 pub mod set_lockup;
 pub mod split;
+pub mod redelegate;
+pub mod delegate_stake;
 
 // pub use authorize_with_seed::*;
 pub use authorized_checked::*;
@@ -13,6 +15,8 @@ pub use move_lamports::*;
 pub use redelegate::*;
 pub use set_lockup::*;
 pub use split::*;
+pub use redelegate::*;
+pub use delegate_stake::*;
 
 #[repr(u8)]
 pub enum StakeInstruction {
