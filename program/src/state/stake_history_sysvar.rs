@@ -24,18 +24,6 @@ pub const MAX_ENTRIES: usize = 512; // it should never take as many as 512 epoch
 use crate::state::get_sysvar;
 
 use super::{StakeHistoryEntry, StakeHistoryGetEntry};
-#[deprecated(
-    since = "2.2.0",
-    note = "Use solana_stake_interface::stake_history instead"
-)]
-#[cfg(feature = "bincode")]
-impl Sysvar for StakeHistory {
-    // override
-    fn size_of() -> usize {
-        // hard-coded so that we don't have to construct an empty
-        16392 // golden, update if MAX_ENTRIES changes
-    }
-}
 
 // we do not provide Default because this requires the real current epoch
 #[derive(Debug, PartialEq, Eq, Clone)]

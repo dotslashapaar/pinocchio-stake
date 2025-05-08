@@ -1,6 +1,6 @@
-use pinocchio::pubkey::Pubkey;
+use pinocchio::{pubkey::Pubkey, sysvars::clock::Clock};
 
-use super::{Clock, Epoch, UnixTimestamp};
+use super::{Epoch, UnixTimestamp};
 
 #[repr(C)]
 #[derive(Default, Debug, PartialEq, Eq, Clone, Copy)]
@@ -42,7 +42,7 @@ impl Lockup {
             return false;
         }
 
-        i64::from_le_bytes(self.unix_timestamp) > i64::from_le_bytes(clock.unix_timestamp)
-            || u64::from_le_bytes(self.epoch) > u64::from_le_bytes(clock.epoch)
+        i64::from_le_bytes(self.unix_timestamp) > clock.unix_timestamp
+            || u64::from_le_bytes(self.epoch) > clock.epoch
     }
 }
