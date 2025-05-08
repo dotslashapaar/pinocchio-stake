@@ -7,7 +7,8 @@ use super::{bytes_to_u64, Delegation, Epoch, StakeHistoryGetEntry};
 pub struct Stake {
     pub delegation: Delegation,
     /// credits observed is credits from vote account state when delegated or redeemed
-    credits_observed: [u8; 8], //u64
+    pub credits_observed: [u8; 8], //u64
+    // changed to pub (as required in utils.rs L511 and L455)
 }
 
 impl Stake {

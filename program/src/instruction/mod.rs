@@ -5,11 +5,13 @@ pub mod authorized_checked;
 pub mod set_lockup;
 pub mod split;
 pub mod redelegate;
+pub mod delegate_stake;
 
 pub use authorized_checked::*;
 pub use set_lockup::*;
 pub use split::*;
 pub use redelegate::*;
+pub use delegate_stake::*;
 
 
 #[repr(u8)]
