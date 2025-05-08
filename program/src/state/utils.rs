@@ -8,12 +8,11 @@ use pinocchio::{
 
 extern crate alloc;
 use super::{
-    try_get_stake_state_mut, Meta, StakeAuthorize, StakeStateV2, DEFAULT_WARMUP_COOLDOWN_RATE,
+    try_get_stake_state_mut, Delegation, Meta, Stake, StakeAuthorize, StakeHistorySysvar, StakeStateV2, VoteState, DEFAULT_WARMUP_COOLDOWN_RATE
 };
-use crate::consts::{
-    CLOCK_ID, FEATURE_STAKE_RAISE_MINIMUM_DELEGATION_TO_1_SOL, LAMPORTS_PER_SOL, MAX_SIGNERS,
-    NEW_WARMUP_COOLDOWN_RATE,
-};
+use crate::{consts::{
+    CLOCK_ID, FEATURE_STAKE_RAISE_MINIMUM_DELEGATION_TO_1_SOL, HASH_BYTES, LAMPORTS_PER_SOL, MAX_BASE58_LEN, MAX_SIGNERS, NEW_WARMUP_COOLDOWN_RATE, PERPETUAL_NEW_WARMUP_COOLDOWN_RATE_EPOCH
+}, error::StakeError};
 use alloc::boxed::Box;
 use core::{ cell::UnsafeCell, fmt, mem, str::{ from_utf8, FromStr } };
 
