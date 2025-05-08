@@ -20,7 +20,7 @@ pub struct Delegation {
         since = "1.16.7",
         note = "Please use `solana_sdk::stake::state::warmup_cooldown_rate()` instead"
     )]
-    warmup_cooldown_rate: [u8; 8], //f64
+    pub warmup_cooldown_rate: [u8; 8], //f64
 }
 
 impl Delegation {

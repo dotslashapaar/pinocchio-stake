@@ -95,6 +95,18 @@ impl StakeHistory {
     }
 }
 
+#[deprecated(
+    since = "2.2.0",
+    note = "Use solana_stake_interface::stake_history instead"
+)]
+impl StakeHistory {
+    // override
+    fn size_of() -> usize {
+        // hard-coded so that we don't have to construct an empty
+        16392 // golden, update if MAX_ENTRIES changes
+    }
+}
+
 impl Deref for StakeHistory {
     type Target = alloc::vec::Vec<(Epoch, StakeHistoryEntry)>;
     fn deref(&self) -> &Self::Target {
