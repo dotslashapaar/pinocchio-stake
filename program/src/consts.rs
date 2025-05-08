@@ -8,6 +8,7 @@ pub const LAMPORTS_PER_SOL: u64 = 1_000_000_000;
 pub const SYSVAR: Pubkey = pubkey!("Sysvar1111111111111111111111111111111111111");
 pub const DEFAULT_WARMUP_COOLDOWN_RATE: f64 = 0.25;
 pub const NEW_WARMUP_COOLDOWN_RATE: f64 = 0.09;
+pub const CLOCK_ID: Pubkey = pubkey!("SysvarC1ock11111111111111111111111111111111");
 pub const VOTE_PROGRAM_ID: Pubkey = pubkey!("Vote111111111111111111111111111111111111111");
 
 // Maximum number of votes to keep around, tightly coupled with epoch_schedule::MINIMUM_SLOTS_PER_EPOCH
