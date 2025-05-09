@@ -8,8 +8,7 @@ use pinocchio::{
 
 extern crate alloc;
 use super::{
-    get_stake_state, try_get_stake_state_mut, Meta, StakeAuthorize, StakeStateV2,
-    DEFAULT_WARMUP_COOLDOWN_RATE, Delegation, Stake, StakeHistorySysvar, VoteState,
+    get_stake_state, try_get_stake_state_mut, Delegation, Meta, Stake, StakeAuthorize, StakeHistorySysvar, StakeStateV2, VoteState, DEFAULT_WARMUP_COOLDOWN_RATE
 };
 use crate::{
     consts::{
@@ -505,11 +504,52 @@ pub fn clock_from_account_info(account_info: &AccountInfo) -> Result<Ref<Clock>,
         return Err(ProgramError::InvalidAccountData);
     }
 
-    // source and destination must be writable
-    // runtime guards against unowned writes, but MoveStake and MoveLamports are defined by SIMD
-    // we check explicitly to avoid any possibility of a successful no-op that never attempts to write
-    if !source_stake_account_info.is_writable() || !destination_stake_account_info.is_writable() {
-        return Err(ProgramError::InvalidInstructionData);
+    if account_info.key() != &CLOCK_ID {
+        return Err(ProgramError::InvalidAccountData);
+    }
+
+    let data = account_info.try_borrow_data()?;
+
+    Ok(Ref::map(data, |data| unsafe {
+        &*(data.as_ptr() as *const Clock)
+    }))
+}
+
+/// After calling `validate_delegated_amount()`, this struct contains calculated
+/// values that are used by the caller.
+pub(crate) struct ValidatedDelegatedInfo {
+    pub stake_amount: [u8; 8],
+}
+
+pub(crate) fn new_stake(
+    stake: [u8; 8],
+    voter_pubkey: &Pubkey,
+    vote_state: &VoteState,
+    activation_epoch: [u8; 8]
+) -> Stake {
+    Stake {
+        delegation: Delegation::new(
+            voter_pubkey,
+            bytes_to_u64(stake),
+            activation_epoch
+        ),
+        credits_observed: vote_state.credits().to_le_bytes(),
+    }
+}
+
+/// Ensure the stake delegation amount is valid.  This checks that the account
+/// meets the minimum balance requirements of delegated stake.  If not, return
+/// an error.
+pub(crate) fn validate_delegated_amount(
+    account: &AccountInfo,
+    meta: &Meta
+) -> Result<ValidatedDelegatedInfo, ProgramError> {
+    let stake_amount = account.lamports().saturating_sub(bytes_to_u64(meta.rent_exempt_reserve)); // can't stake the rent
+
+    // Stake accounts may be initialized with a stake amount below the minimum
+    // delegation so check that the minimum is met before delegation.
+    if stake_amount < get_minimum_delegation() {
+        return Err(StakeError::InsufficientDelegation.into());
     }
     Ok(ValidatedDelegatedInfo { stake_amount: stake_amount.to_be_bytes() })
 }
