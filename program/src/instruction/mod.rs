@@ -6,7 +6,6 @@ pub mod authorized_checked;
 pub mod move_lamports;
 pub mod set_lockup;
 pub mod split;
-pub mod redelegate;
 pub mod delegate_stake;
 pub mod merge;
 
@@ -16,7 +15,6 @@ pub use move_lamports::*;
 pub use redelegate::*;
 pub use set_lockup::*;
 pub use split::*;
-pub use redelegate::*;
 pub use delegate_stake::*;
 pub use merge::*;
 
