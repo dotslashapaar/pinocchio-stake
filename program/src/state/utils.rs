@@ -8,8 +8,8 @@ use pinocchio::{
 
 extern crate alloc;
 use super::{
-    get_stake_state, set_stake_state, Meta, StakeAuthorize, StakeHistorySysvar, StakeStateV2,
-    DEFAULT_WARMUP_COOLDOWN_RATE,
+    get_stake_state, try_get_stake_state_mut, Meta, StakeAuthorize, StakeStateV2,
+    DEFAULT_WARMUP_COOLDOWN_RATE, Delegation, Stake, StakeHistorySysvar, VoteState,
 };
 use crate::{
     consts::{
