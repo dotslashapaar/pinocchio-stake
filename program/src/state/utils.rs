@@ -13,19 +13,13 @@ use super::{
 };
 use crate::{
     consts::{
-        FEATURE_STAKE_RAISE_MINIMUM_DELEGATION_TO_1_SOL,
-        HASH_BYTES,
-        LAMPORTS_PER_SOL,
-        MAX_BASE58_LEN,
-        MAX_SIGNERS,
+        FEATURE_STAKE_RAISE_MINIMUM_DELEGATION_TO_1_SOL, LAMPORTS_PER_SOL, MAX_SIGNERS,
         NEW_WARMUP_COOLDOWN_RATE,
-        PERPETUAL_NEW_WARMUP_COOLDOWN_RATE_EPOCH,
-        SYSVAR,
     },
     helpers::MergeKind,
 };
 use crate::{consts::{
-    CLOCK_ID, HASH_BYTES, MAX_BASE58_LEN, PERPETUAL_NEW_WARMUP_COOLDOWN_RATE_EPOCH,
+    CLOCK_ID, HASH_BYTES, MAX_BASE58_LEN, PERPETUAL_NEW_WARMUP_COOLDOWN_RATE_EPOCH
 }, error::StakeError};
 use alloc::boxed::Box;
 use core::{ cell::UnsafeCell, fmt, str::from_utf8 };
