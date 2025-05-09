@@ -25,7 +25,7 @@ use crate::{
     helpers::MergeKind,
 };
 use alloc::boxed::Box;
-use core::{ cell::UnsafeCell, fmt, mem, str::{ from_utf8, FromStr } };
+use core::{ cell::UnsafeCell, fmt, str::from_utf8 };
 
 pub trait DataLen {
     const LEN: usize;
