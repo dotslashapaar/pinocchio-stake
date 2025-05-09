@@ -130,4 +130,3 @@ pub fn checked_add(a: [u8; 8], b: [u8; 8]) -> Result<[u8; 8], ProgramError> {
         .map(|result| result.to_le_bytes())
         .ok_or(ProgramError::InsufficientFunds)
 }
-
