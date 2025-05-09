@@ -1,9 +1,9 @@
 use pinocchio::program_error::ProgramError;
 
-pub mod delegate_stake;
-pub use delegate_stake::*;
+// pub mod authorize_with_seed
 pub mod authorized_checked;
 pub mod move_lamports;
+pub mod redelegate;
 pub mod set_lockup;
 pub mod split;
 pub mod delegate_stake;

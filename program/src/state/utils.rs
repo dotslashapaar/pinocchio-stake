@@ -24,6 +24,9 @@ use crate::{
     },
     helpers::MergeKind,
 };
+use crate::{consts::{
+    CLOCK_ID, HASH_BYTES, MAX_BASE58_LEN, PERPETUAL_NEW_WARMUP_COOLDOWN_RATE_EPOCH,
+}, error::StakeError};
 use alloc::boxed::Box;
 use core::{ cell::UnsafeCell, fmt, str::from_utf8 };
 
@@ -500,4 +503,220 @@ pub fn move_stake_or_lamports_shared_checks(
     )?;
 
     Ok((source_merge_kind, destination_merge_kind))
+}
+
+//from_account_info helper for Clock while not implemente by Pinocchio
+pub fn clock_from_account_info(account_info: &AccountInfo) -> Result<Ref<Clock>, ProgramError> {
+    if account_info.data_len() != core::mem::size_of::<Clock>() {
+        return Err(ProgramError::InvalidAccountData);
+    }
+
+    // source and destination must be writable
+    // runtime guards against unowned writes, but MoveStake and MoveLamports are defined by SIMD
+    // we check explicitly to avoid any possibility of a successful no-op that never attempts to write
+    if !source_stake_account_info.is_writable() || !destination_stake_account_info.is_writable() {
+        return Err(ProgramError::InvalidInstructionData);
+    }
+    Ok(ValidatedDelegatedInfo { stake_amount: stake_amount.to_be_bytes() })
+}
+
+pub(crate) fn redelegate_stake(
+    stake: &mut Stake,
+    stake_lamports: [u8; 8],
+    voter_pubkey: &Pubkey,
+    vote_state: &VoteState,
+    epoch: [u8;8],
+    stake_history: &StakeHistorySysvar
+) -> Result<(), ProgramError> {
+    // If stake is currently active:
+    if
+        stake.stake(epoch, stake_history, PERPETUAL_NEW_WARMUP_COOLDOWN_RATE_EPOCH) !=
+        0
+    {
+        // If pubkey of new voter is the same as current,
+        // and we are scheduled to start deactivating this epoch,
+        // we rescind deactivation
+        if
+            stake.delegation.voter_pubkey == *voter_pubkey &&
+            epoch == stake.delegation.deactivation_epoch
+        {
+            stake.delegation.deactivation_epoch = u64::MAX.to_le_bytes();
+            return Ok(());
+        } else {
+            // can't redelegate to another pubkey if stake is active.
+            return Err(StakeError::TooSoonToRedelegate.into());
+        }
+    }
+    // Either the stake is freshly activated, is active but has been
+    // deactivated this epoch, or has fully de-activated.
+    // Redelegation implies either re-activation or un-deactivation
+
+    stake.delegation.stake = stake_lamports;
+    stake.delegation.activation_epoch = epoch;
+    stake.delegation.deactivation_epoch = u64::MAX.to_le_bytes();
+    stake.delegation.voter_pubkey = *voter_pubkey;
+    stake.credits_observed = vote_state.credits().to_be_bytes();
+    Ok(())
+}
+
+// --- Hash struct and impls ----
+
+#[cfg_attr(feature = "bytemuck", derive(Pod, Zeroable))]
+#[derive(Clone, Copy, Default, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[repr(transparent)]
+pub struct Hash(pub(crate) [u8; HASH_BYTES]);
+
+impl From<[u8; HASH_BYTES]> for Hash {
+    fn from(from: [u8; 32]) -> Self {
+        Self(from)
+    }
+}
+
+impl AsRef<[u8]> for Hash {
+    fn as_ref(&self) -> &[u8] {
+        &self.0[..]
+    }
+}
+
+fn write_as_base58(f: &mut fmt::Formatter, h: &Hash) -> fmt::Result {
+    let mut out = [0u8; MAX_BASE58_LEN];
+    let out_slice: &mut [u8] = &mut out;
+    // This will never fail because the only possible error is BufferTooSmall,
+    // and we will never call it with too small a buffer.
+    let len = bs58::encode(h.0).onto(out_slice).unwrap();
+    let as_str = from_utf8(&out[..len]).unwrap();
+    f.write_str(as_str)
+}
+
+impl fmt::Debug for Hash {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write_as_base58(f, self)
+    }
+}
+
+impl fmt::Display for Hash {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write_as_base58(f, self)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ParseHashError {
+    WrongSize,
+    Invalid,
+}
+
+// #[cfg(feature = "std")]
+// impl std::error::Error for ParseHashError {}
+
+impl fmt::Display for ParseHashError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            ParseHashError::WrongSize => f.write_str("string decoded to wrong size for hash"),
+            ParseHashError::Invalid => f.write_str("failed to decoded string to hash"),
+        }
+    }
+}
+
+// requires the solana_sdk::bs58 crate
+// impl FromStr for Hash {
+//     type Err = ParseHashError;
+
+//     fn from_str(s: &str) -> Result<Self, Self::Err> {
+//         if s.len() > MAX_BASE58_LEN {
+//             return Err(ParseHashError::WrongSize);
+//         }
+//         let mut bytes = [0; HASH_BYTES];
+//         let decoded_size = bs58::decode(s)
+//             .onto(&mut bytes)
+//             .map_err(|_| ParseHashError::Invalid)?;
+//         if decoded_size != mem::size_of::<Hash>() {
+//             Err(ParseHashError::WrongSize)
+//         } else {
+//             Ok(bytes.into())
+//         }
+//     }
+// }
+
+impl Hash {
+    #[deprecated(since = "2.2.0", note = "Use 'Hash::new_from_array' instead")]
+    pub fn new(hash_slice: &[u8]) -> Self {
+        Hash(<[u8; HASH_BYTES]>::try_from(hash_slice).unwrap())
+    }
+
+    pub const fn new_from_array(hash_array: [u8; HASH_BYTES]) -> Self {
+        Self(hash_array)
+    }
+
+    // /// unique Hash for tests and benchmarks.
+    // pub fn new_unique() -> Self {
+    //     use solana_atomic_u64::AtomicU64;
+    //     static I: AtomicU64 = AtomicU64::new(1);
+
+    //     let mut b = [0u8; HASH_BYTES];
+    //     let i = I.fetch_add(1);
+    //     b[0..8].copy_from_slice(&i.to_le_bytes());
+    //     Self::new_from_array(b)
+    // }
+
+    // pub fn to_bytes(self) -> [u8; HASH_BYTES] {
+    //     self.0
+    // }
+}
+
+#[cfg(target_arch = "wasm32")]
+#[allow(non_snake_case)]
+#[wasm_bindgen]
+impl Hash {
+    /// Create a new Hash object
+    ///
+    /// * `value` - optional hash as a base58 encoded string, `Uint8Array`, `[number]`
+    #[wasm_bindgen(constructor)]
+    pub fn constructor(value: JsValue) -> Result<Hash, JsValue> {
+        if let Some(base58_str) = value.as_string() {
+            base58_str.parse::<Hash>().map_err(|x| JsValue::from(x.to_string()))
+        } else if let Some(uint8_array) = value.dyn_ref::<Uint8Array>() {
+            <[u8; HASH_BYTES]>
+                ::try_from(uint8_array.to_vec())
+                .map(Hash::new_from_array)
+                .map_err(|err| format!("Invalid Hash value: {err:?}").into())
+        } else if let Some(array) = value.dyn_ref::<Array>() {
+            let mut bytes = vec![];
+            let iterator = js_sys::try_iter(&array.values())?.expect("array to be iterable");
+            for x in iterator {
+                let x = x?;
+
+                if let Some(n) = x.as_f64() {
+                    if n >= 0.0 && n <= 255.0 {
+                        bytes.push(n as u8);
+                        continue;
+                    }
+                }
+                return Err(format!("Invalid array argument: {:?}", x).into());
+            }
+            <[u8; HASH_BYTES]>
+                ::try_from(bytes)
+                .map(Hash::new_from_array)
+                .map_err(|err| format!("Invalid Hash value: {err:?}").into())
+        } else if value.is_undefined() {
+            Ok(Hash::default())
+        } else {
+            Err("Unsupported argument".into())
+        }
+    }
+
+    /// Return the base58 string representation of the hash
+    pub fn toString(&self) -> String {
+        self.to_string()
+    }
+
+    /// Checks if two `Hash`s are equal
+    pub fn equals(&self, other: &Hash) -> bool {
+        self == other
+    }
+
+    /// Return the `Uint8Array` representation of the hash
+    pub fn toBytes(&self) -> Box<[u8]> {
+        self.0.clone().into()
+    }
 }
