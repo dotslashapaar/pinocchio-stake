@@ -8,22 +8,20 @@ use pinocchio::{
 
 extern crate alloc;
 use super::{
-    get_stake_state, try_get_stake_state_mut, Clock, Meta, StakeAuthorize, StakeStateV2,
-    DEFAULT_WARMUP_COOLDOWN_RATE,
+    get_stake_state, try_get_stake_state_mut, Delegation, Meta, Stake, StakeAuthorize, StakeHistorySysvar, StakeStateV2, VoteState, DEFAULT_WARMUP_COOLDOWN_RATE
 };
 use crate::{
     consts::{
         FEATURE_STAKE_RAISE_MINIMUM_DELEGATION_TO_1_SOL, LAMPORTS_PER_SOL, MAX_SIGNERS,
-        NEW_WARMUP_COOLDOWN_RATE, SYSVAR,
+        NEW_WARMUP_COOLDOWN_RATE,
     },
     helpers::MergeKind,
-    try_get_stake_state_mut, Delegation, Meta, Stake, StakeAuthorize, StakeHistorySysvar, StakeStateV2, VoteState, DEFAULT_WARMUP_COOLDOWN_RATE
 };
 use crate::{consts::{
-    CLOCK_ID, FEATURE_STAKE_RAISE_MINIMUM_DELEGATION_TO_1_SOL, HASH_BYTES, LAMPORTS_PER_SOL, MAX_BASE58_LEN, MAX_SIGNERS, NEW_WARMUP_COOLDOWN_RATE, PERPETUAL_NEW_WARMUP_COOLDOWN_RATE_EPOCH
+    CLOCK_ID, HASH_BYTES, MAX_BASE58_LEN, PERPETUAL_NEW_WARMUP_COOLDOWN_RATE_EPOCH
 }, error::StakeError};
 use alloc::boxed::Box;
-use core::{ cell::UnsafeCell, fmt, mem, str::{ from_utf8, FromStr } };
+use core::{ cell::UnsafeCell, fmt, str::from_utf8 };
 
 pub trait DataLen {
     const LEN: usize;
