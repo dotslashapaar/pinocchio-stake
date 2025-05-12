@@ -25,7 +25,7 @@ fn process_instruction(
     }
 
     let (ix_disc, instruction_data) = instruction_data
-        .split_first_chunk::<4>()
+        .split_first()
         .ok_or(ProgramError::InvalidInstructionData)?;
 
     // Second variant, test CUs usage
@@ -33,7 +33,7 @@ fn process_instruction(
     //     .split_at_checked(4)
     //     .ok_or(ProgramError::InvalidInstructionData)?;
 
-    let instruction = StakeInstruction::try_from(&ix_disc[0])?;
+    let instruction = StakeInstruction::try_from(ix_disc)?;
 
     // TODO: add check for epoch_rewards_active
     // let epoch_rewards_active = EpochRewards::get()
@@ -148,7 +148,8 @@ fn process_instruction(
             #[cfg(feature = "logging")]
             pinocchio::msg!("Instruction: MoveLamports");
 
-            instruction::process_move_lamports(accounts)
+            // instruction::process_move_lamports(accounts, lamports)
+            todo!()
         }
     }
 }
