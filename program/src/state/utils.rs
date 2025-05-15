@@ -412,11 +412,17 @@ pub fn collect_signers_checked<'a>(
     let mut signers_count = 0;
 
     if let Some(authority_info) = authority_info {
-        add_signer(&mut signers, &mut signers_count, authority_info)?;
+        if !authority_info.is_signer() {
+            return Err(ProgramError::MissingRequiredSignature);
+        }
+        add_signer(&mut signers, &mut signers_count, authority_info.key());
     }
 
     let custodian = if let Some(custodian_info) = custodian_info {
-        add_signer(&mut signers, &mut signers_count, custodian_info)?;
+        if !custodian_info.is_signer() {
+            return Err(ProgramError::MissingRequiredSignature);
+        }
+        add_signer(&mut signers, &mut signers_count, &custodian_info.key());
         Some(custodian_info.key())
     } else {
         None
@@ -428,15 +434,12 @@ pub fn collect_signers_checked<'a>(
 pub fn add_signer(
     signers: &mut [Pubkey; MAX_SIGNERS],
     signers_count: &mut usize,
-    account_info: &AccountInfo,
+    account_key: &Pubkey,
 ) -> Result<(), ProgramError> {
     if *signers_count >= MAX_SIGNERS {
         return Err(ProgramError::MaxAccountsDataAllocationsExceeded);
     }
-    if !account_info.is_signer() {
-        return Err(ProgramError::MissingRequiredSignature);
-    }
-    signers[*signers_count] = *account_info.key();
+    signers[*signers_count] = *account_key;
     *signers_count += 1;
     Ok(())
 }
