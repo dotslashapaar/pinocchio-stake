@@ -1,8 +1,9 @@
 use pinocchio::{
-    account_info::AccountInfo, program_error::ProgramError, pubkey::Pubkey, ProgramResult,
+    account_info::AccountInfo, program_error::ProgramError, pubkey::Pubkey, sysvars::clock::Clock,
+    ProgramResult,
 };
 
-use crate::state::{clock_from_account_info, collect_signers, do_authorize, StakeAuthorize};
+use crate::state::{collect_signers, do_authorize, StakeAuthorize};
 
 pub fn process_authorize_checked(
     accounts: &[AccountInfo],
@@ -24,7 +25,7 @@ pub fn process_authorize_checked(
         None
     };
 
-    let clock = *clock_from_account_info(clock_info)?;
+    let clock = Clock::from_account_info(clock_info)?;
 
     if !new_stake_or_withdraw_authority_info.is_signer() {
         return Err(ProgramError::MissingRequiredSignature);
@@ -41,7 +42,7 @@ pub fn process_authorize_checked(
         new_stake_or_withdraw_authority_info.key(),
         authority_type,
         custodian,
-        clock,
+        &clock,
     )?;
 
     Ok(())
