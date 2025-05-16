@@ -344,7 +344,7 @@ pub fn do_authorize(
     new_authority: &Pubkey,
     authority_type: StakeAuthorize,
     custodian: Option<&Pubkey>,
-    clock: Clock,
+    clock: &Clock,
 ) -> ProgramResult {
     let mut stake_account: pinocchio::account_info::RefMut<'_, StakeStateV2> =
         try_get_stake_state_mut(stake_account_info)?;
@@ -355,7 +355,7 @@ pub fn do_authorize(
                     signers,
                     new_authority,
                     authority_type,
-                    Some((&meta.lockup, &clock, custodian)),
+                    Some((&meta.lockup, clock, custodian)),
                 )
                 .map_err(to_program_error)?;
             *stake_account = StakeStateV2::Initialized(meta);
@@ -367,7 +367,7 @@ pub fn do_authorize(
                     signers,
                     new_authority,
                     authority_type,
-                    Some((&meta.lockup, &clock, custodian)),
+                    Some((&meta.lockup, clock, custodian)),
                 )
                 .map_err(to_program_error)?;
 

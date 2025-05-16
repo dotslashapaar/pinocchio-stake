@@ -55,7 +55,7 @@ fn process_authorize_with_seed(
         &authorize_args.new_authorized_pubkey,
         authorize_args.stake_authorize,
         custodian,
-        *clock,
+        &clock,
     )?;
 
     Ok(())
