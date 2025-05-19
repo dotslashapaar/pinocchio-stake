@@ -63,12 +63,14 @@ impl <'a> AuthorizeCheckedWithSeedArgs<'a>{
         let authority_seed=core::str::from_utf8(&input[offset..offset+seed_len]).map_err(|_| ProgramError::InvalidInstructionData)?;
         offset+=seed_len;
 
-        if input.len() < offset + seed_len + 32 {
+        if input.len() < offset + 32 {
             return Err(ProgramError::InvalidInstructionData);
         }
         
         let mut authority_owner = [0u8; 32];
-        authority_owner.copy_from_slice(&input[offset + seed_len..offset + seed_len + 32]);
+        authority_owner.copy_from_slice(&input[offset..offset + 32]);
+
+        offset +=32;
         
         Ok(Self{
             stake_authorize,
