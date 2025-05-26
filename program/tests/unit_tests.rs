@@ -1,17 +1,18 @@
+// use mollusk_svm::result::{Check, ProgramResult};
 // use mollusk_svm::{program, Mollusk};
-// use mollusk_svm_bencher::MolluskComputeUnitBencher;
-// use solana_pinocchio_starter::{
-//     instruction::{InitializeMyStateIxData, UpdateMyStateIxData},
-//     state::{to_bytes, DataLen, MyState, State},
-//     ID,
-// };
+// use solana_sdk::account::Account;
+// use solana_sdk::instruction::{AccountMeta, Instruction};
+// use solana_sdk::native_token::LAMPORTS_PER_SOL;
 // use solana_sdk::pubkey;
-// use solana_sdk::{
-//     account::Account,
-//     instruction::{AccountMeta, Instruction},
-//     native_token::LAMPORTS_PER_SOL,
-//     pubkey::Pubkey,
-// };
+// use solana_sdk::pubkey::Pubkey;
+// extern crate alloc;
+// use alloc::vec;
+
+// use solana_pinocchio_starter::instruction::{InitializeMyStateIxData, UpdateMyStateIxData};
+// use solana_pinocchio_starter::state::{to_bytes, DataLen, MyState, State};
+// use solana_pinocchio_starter::ID;
+// use solana_sdk::rent::Rent;
+// use solana_sdk::sysvar::Sysvar;
 
 // pub const PROGRAM: Pubkey = Pubkey::new_from_array(ID);
 
@@ -19,9 +20,23 @@
 
 // pub const PAYER: Pubkey = pubkey!("41LzznNicELmc5iCR9Jxke62a3v1VhzpBYodQF5AQwHX");
 
-// fn main() {
+// pub fn mollusk() -> Mollusk {
 //     let mollusk = Mollusk::new(&PROGRAM, "target/deploy/solana_pinocchio_starter");
+//     mollusk
+// }
 
+// pub fn get_rent_data() -> Vec<u8> {
+//     let rent = Rent::default();
+//     unsafe {
+//         core::slice::from_raw_parts(&rent as *const Rent as *const u8, Rent::size_of()).to_vec()
+//     }
+// }
+
+// #[test]
+// fn test_initialize_mystate() {
+//     let mollusk = mollusk();
+
+//     //system program and system account
 //     let (system_program, system_account) = program::keyed_account_for_system_program();
 
 //     // Create the PDA
@@ -31,8 +46,9 @@
 //     //Initialize the accounts
 //     let payer_account = Account::new(1 * LAMPORTS_PER_SOL, 0, &system_program);
 //     let mystate_account = Account::new(0, 0, &system_program);
-//     let min_balance = mollusk.sysvars.rent.minimum_balance(0);
-//     let rent_account = Account::new(min_balance, 0, &RENT);
+//     let min_balance = mollusk.sysvars.rent.minimum_balance(Rent::size_of());
+//     let mut rent_account = Account::new(min_balance, Rent::size_of(), &RENT);
+//     rent_account.data = get_rent_data();
 
 //     //Push the accounts in to the instruction_accounts vec!
 //     let ix_accounts = vec![
@@ -56,17 +72,38 @@
 //     ser_ix_data.extend_from_slice(unsafe { to_bytes(&ix_data) });
 
 //     // Create instruction
-//     let instruction0 = Instruction::new_with_bytes(PROGRAM, &ser_ix_data, ix_accounts);
+//     let instruction = Instruction::new_with_bytes(PROGRAM, &ser_ix_data, ix_accounts);
 
 //     // Create tx_accounts vec
-//     let tx_accounts0 = &vec![
+//     let tx_accounts = &vec![
 //         (PAYER, payer_account.clone()),
 //         (mystate_pda, mystate_account.clone()),
 //         (RENT, rent_account.clone()),
 //         (system_program, system_account.clone()),
 //     ];
 
+//     let init_res =
+//         mollusk.process_and_validate_instruction(&instruction, tx_accounts, &[Check::success()]);
+
+//     assert!(init_res.program_result == ProgramResult::Success);
+// }
+
+// #[test]
+// fn test_update_mystate() {
+//     let mollusk = mollusk();
+
+//     //system program and system account
+//     let (system_program, _system_account) = program::keyed_account_for_system_program();
+
+//     // Create the PDA
+//     let (mystate_pda, _bump) =
+//         Pubkey::find_program_address(&[MyState::SEED.as_bytes(), &PAYER.to_bytes()], &PROGRAM);
+
+//     //Initialize the accounts
+//     let payer_account = Account::new(1 * LAMPORTS_PER_SOL, 0, &system_program);
+
 //     let rent = mollusk.sysvars.rent.minimum_balance(MyState::LEN);
+
 //     let mut mystate_account = Account::new(rent, MyState::LEN, &ID.into());
 
 //     let my_state = MyState {
@@ -95,19 +132,15 @@
 //     ser_ix_data.extend_from_slice(unsafe { to_bytes(&ix_data) });
 
 //     // Create instruction
-//     let instruction1 = Instruction::new_with_bytes(PROGRAM, &ser_ix_data, ix_accounts);
+//     let instruction = Instruction::new_with_bytes(PROGRAM, &ser_ix_data, ix_accounts);
 //     // Create tx_accounts vec
-//     let tx_accounts1 = &vec![
+//     let tx_accounts = &vec![
 //         (PAYER, payer_account.clone()),
 //         (mystate_pda, mystate_account.clone()),
 //     ];
 
-//     MolluskComputeUnitBencher::new(mollusk)
-//         .bench(("InitializeMyState", &instruction0, tx_accounts0))
-//         .bench(("UpdateMyState", &instruction1, tx_accounts1))
-//         .must_pass(true)
-//         .out_dir("benches/")
-//         .execute();
-// }
+//     let update_res =
+//         mollusk.process_and_validate_instruction(&instruction, tx_accounts, &[Check::success()]);
 
-fn main() {}
+//     assert!(update_res.program_result == ProgramResult::Success);
+// }

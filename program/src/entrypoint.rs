@@ -2,8 +2,7 @@
 
 use crate::instruction::{self, StakeInstruction};
 use pinocchio::{
-    account_info::AccountInfo, default_panic_handler, no_allocator, program_entrypoint,
-    program_error::ProgramError, pubkey::Pubkey, ProgramResult,
+    account_info::AccountInfo, default_panic_handler, no_allocator, program_entrypoint, program_error::ProgramError, pubkey::Pubkey, ProgramResult
 };
 
 // This is the entrypoint for the program.
@@ -88,7 +87,7 @@ fn process_instruction(
         StakeInstruction::Merge => {
             #[cfg(feature = "logging")]
             pinocchio::msg!("Instruction: Merge");
-
+            
             todo!()
         }
         StakeInstruction::AuthorizeWithSeed => {
@@ -147,7 +146,8 @@ fn process_instruction(
             #[cfg(feature = "logging")]
             pinocchio::msg!("Instruction: MoveLamports");
 
-            instruction::process_move_lamports(accounts)
+            // instruction::process_move_lamports(accounts, lamports)
+            todo!()
         }
     }
 }
